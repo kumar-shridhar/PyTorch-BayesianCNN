@@ -56,17 +56,19 @@ class BBBCNN1(nn.Module):
         self.layers = nn.ModuleList(layers)
 
     def probforward(self, x):
+        'Forward pass with Bayesian weights'
         kl = 0
         for layer in self.layers:
             if hasattr(layer, 'convprobforward') and callable(layer.convprobforward):
-                logits, _kl, = layer.convprobforward(x)
+                x, _kl, = layer.convprobforward(x)
                 kl += _kl
+
             elif hasattr(layer, 'fcprobforward') and callable(layer.fcprobforward):
-                logits, _kl, = layer.fcprobforward(x)
+                x, _kl, = layer.fcprobforward(x)
                 kl += _kl
             else:
-                logits = layer(x)
-                #print('x', x.size())
+                x = layer(x)
+        logits = x
         print('logits', logits)
         return logits, kl
 

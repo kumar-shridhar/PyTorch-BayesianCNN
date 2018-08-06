@@ -1,10 +1,12 @@
-#imports
+# imports
 
 import torch.nn as nn
 from utils.BBBlayers import BBBConv2d, BBBLinearFactorial, FlattenLayer
 
+
 class BBBLeNet(nn.Module):
     '''The architecture of LeNet with Bayesian Layers'''
+
     def __init__(self, outputs, inputs):
         super(BBBLeNet, self).__init__()
         self.conv1 = BBBConv2d(inputs, 6, 5, stride=1)
@@ -34,13 +36,14 @@ class BBBLeNet(nn.Module):
         kl = 0
         for layer in self.layers:
             if hasattr(layer, 'convprobforward') and callable(layer.convprobforward):
-                logits, _kl, = layer.convprobforward(x)
+                x, _kl, = layer.convprobforward(x)
                 kl += _kl
 
             elif hasattr(layer, 'fcprobforward') and callable(layer.fcprobforward):
-                logits, _kl, = layer.fcprobforward(x)
+                x, _kl, = layer.fcprobforward(x)
                 kl += _kl
             else:
-                logits = layer(x)
+                x = layer(x)
+        logits = x
         print('logits', logits)
         return logits, kl
