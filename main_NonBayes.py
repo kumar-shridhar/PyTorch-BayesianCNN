@@ -8,20 +8,21 @@ import pickle
 
 from utils.NonBayesianModels.LeNet import LeNet
 from utils.NonBayesianModels.ELUN1 import ELUN1
-from utils.NonBayesianModels.ELUN2 import ELUN2
 from utils.NonBayesianModels.ExperimentalCNNModel import CNN1
+from utils.NonBayesianModels.SqueezeNet import SqueezeNet
 from utils.NonBayesianModels.ThreeConvThreeFC import ThreeConvThreeFC
 
 
 cuda = torch.cuda.is_available()
+torch.cuda.set_device(1)
 
 '''
 HYPERPARAMETERS
 '''
 is_training = True  # set to "False" to only run validation
-net = ThreeConvThreeFC
-batch_size = 128
-dataset = 'MNIST'  # MNIST, CIFAR-10, CIFAR-100, Monkey species or LSUN
+net = SqueezeNet
+batch_size = 256
+dataset = 'CIFAR-100'  # MNIST, CIFAR-10, CIFAR-100, Monkey species or LSUN
 num_epochs = 100
 lr = 0.00001
 weight_decay = 0.0005
@@ -53,6 +54,8 @@ elif net is ELUN1:
     resize = 32
 elif net is CNN1:
     resize = 32
+elif net is SqueezeNet:
+    resize = 224
 else:
     pass
 
