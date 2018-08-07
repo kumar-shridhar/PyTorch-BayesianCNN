@@ -19,8 +19,8 @@ cuda = torch.cuda.is_available()
 HYPERPARAMETERS
 '''
 is_training = True  # set to "False" to only run validation
-num_samples = 8  # because of Casper's trick
-batch_size = 8
+num_samples = 10  # because of Casper's trick
+batch_size = 16
 beta_type = "Blundell"
 net = BBBSqueezeNet
 dataset = 'CIFAR-100'  # MNIST, CIFAR-10, CIFAR-100 or Monkey species
