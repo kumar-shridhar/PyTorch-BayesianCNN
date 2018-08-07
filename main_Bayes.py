@@ -1,10 +1,11 @@
+import os
 import math
 import pickle
+
 import torch.cuda
 import torchvision.transforms as transforms
 import torch.utils.data as data
 import torchvision.datasets as dsets
-import os
 
 from utils.BBBlayers import GaussianVariationalInference
 from utils.BayesianModels.Bayesian3Conv3FC import BBB3Conv3FC
@@ -14,6 +15,7 @@ from utils.BayesianModels.BayesianLeNet import BBBLeNet
 from utils.BayesianModels.BayesianSqueezeNet import BBBSqueezeNet
 
 cuda = torch.cuda.is_available()
+torch.cuda.set_device(0)
 
 '''
 HYPERPARAMETERS
