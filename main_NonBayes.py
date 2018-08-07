@@ -1,10 +1,11 @@
-import torch
 import os
+import pickle
+
+import torch
 import torchvision.datasets as dsets
 import torchvision.transforms as transforms
 import torch.utils.data as data
 import torch.nn as nn
-import pickle
 
 from utils.NonBayesianModels.LeNet import LeNet
 from utils.NonBayesianModels.ELUN1 import ELUN1
