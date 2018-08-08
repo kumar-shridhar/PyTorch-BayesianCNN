@@ -22,7 +22,7 @@ HYPERPARAMETERS
 '''
 is_training = True  # set to "False" to only run validation
 num_samples = 10  # because of Casper's trick
-batch_size = 16
+batch_size = 32
 beta_type = "Blundell"
 net = BBBSqueezeNet
 dataset = 'CIFAR-100'  # MNIST, CIFAR-10, CIFAR-100 or Monkey species
