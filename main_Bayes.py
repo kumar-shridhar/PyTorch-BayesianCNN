@@ -15,7 +15,7 @@ from utils.BayesianModels.BayesianLeNet import BBBLeNet
 from utils.BayesianModels.BayesianSqueezeNet import BBBSqueezeNet
 
 cuda = torch.cuda.is_available()
-torch.cuda.set_device(0)
+#torch.cuda.set_device(0)
 
 '''
 HYPERPARAMETERS
@@ -108,6 +108,7 @@ INSTANTIATE MODEL
 '''
 
 model = net(outputs=outputs, inputs=inputs)
+model = torch.nn.DataParallel(model, device_ids=[0,1]).cuda()
 
 if cuda:
     model.cuda()
