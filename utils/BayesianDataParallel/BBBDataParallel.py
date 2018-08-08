@@ -1,7 +1,7 @@
 import operator
 import torch
 import warnings
-from module import Module
+from .module import Module
 from .scatter_gather import scatter_kwargs, gather
 from .replicate import replicate
 from .parallel_apply import parallel_apply
@@ -129,7 +129,7 @@ class DataParallel(Module):
 
     def gather(self, outputs, output_device):
         return gather(outputs, output_device, dim=self.dim)
-    """
+
 
 
 
