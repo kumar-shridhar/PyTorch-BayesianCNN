@@ -14,7 +14,7 @@ from utils.BayesianModels.BayesianExperimentalCNNModel import BBBCNN1
 from utils.BayesianModels.BayesianLeNet import BBBLeNet
 from utils.BayesianModels.BayesianSqueezeNet import BBBSqueezeNet
 
-#from utils.BayesianDataParallel.BBBDataParallel import DataParallel
+from utils.BayesianDataParallel.BBBDataParallel import DataParallel
 
 cuda = torch.cuda.is_available()
 #print (cuda)
@@ -25,7 +25,7 @@ HYPERPARAMETERS
 '''
 is_training = True  # set to "False" to only run validation
 num_samples = 10  # because of Casper's trick
-batch_size = 16
+batch_size = 32
 beta_type = "Blundell"
 net = BBBSqueezeNet
 dataset = 'CIFAR-100'  # MNIST, CIFAR-10, CIFAR-100 or Monkey species
@@ -111,7 +111,7 @@ INSTANTIATE MODEL
 '''
 
 model = net(outputs=outputs, inputs=inputs)
-#model = DataParallel(model, device_ids=[0,1]).cuda()
+model = DataParallel(model, device_ids=[0,1]).cuda()
 
 if cuda:
     model.cuda()
