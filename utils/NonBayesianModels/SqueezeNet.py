@@ -50,7 +50,7 @@ class SqueezeNet(nn.Module):
             nn.Dropout(p=0.5),
             nn.Conv2d(512, self.outputs, kernel_size=1),
             nn.ReLU(inplace=True),
-            FlattenLayer(13 * 13 * 100)
+            FlattenLayer(13 * 13 * 100),
             nn.Linear(13 * 13 * 100, outputs)
         )
 
