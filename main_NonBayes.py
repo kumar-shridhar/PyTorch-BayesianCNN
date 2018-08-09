@@ -22,7 +22,7 @@ HYPERPARAMETERS
 '''
 is_training = True  # set to "False" to only run validation
 net = SqueezeNet
-batch_size = 256
+batch_size = 128
 dataset = 'CIFAR-100'  # MNIST, CIFAR-10, CIFAR-100, Monkey species or LSUN
 num_epochs = 100
 lr = 0.00001
