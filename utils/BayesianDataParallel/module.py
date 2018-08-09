@@ -3,10 +3,9 @@ import functools
 import itertools
 
 import torch
-from ..backends.thnn import backend as thnn_backend
-from ..parameter import Parameter
+from .backends.thnn import backend as thnn_backend
+from .parameter import Parameter
 import torch.utils.hooks as hooks
-
 
 def _addindent(s_, numSpaces):
     s = s_.split('\n')

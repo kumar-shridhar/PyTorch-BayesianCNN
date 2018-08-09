@@ -14,9 +14,10 @@ from utils.BayesianModels.BayesianExperimentalCNNModel import BBBCNN1
 from utils.BayesianModels.BayesianLeNet import BBBLeNet
 from utils.BayesianModels.BayesianSqueezeNet import BBBSqueezeNet
 
-from utils.BayesianDataParallel.BBBDataParallel import DataParallel
+#from utils.BayesianDataParallel.BBBDataParallel import DataParallel
 
 cuda = torch.cuda.is_available()
+#print (cuda)
 #torch.cuda.set_device(0)
 
 '''
@@ -110,7 +111,7 @@ INSTANTIATE MODEL
 '''
 
 model = net(outputs=outputs, inputs=inputs)
-model = DataParallel(model, device_ids=[0,1]).cuda()
+#model = DataParallel(model, device_ids=[0,1]).cuda()
 
 if cuda:
     model.cuda()
