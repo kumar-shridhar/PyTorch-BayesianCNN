@@ -25,11 +25,11 @@ HYPERPARAMETERS
 '''
 is_training = True  # set to "False" to only run validation
 num_samples = 10  # because of Casper's trick
-batch_size = 512
+batch_size = 1024
 beta_type = "Blundell"
 net = BBBLeNet
 dataset = 'CIFAR-100'  # MNIST, CIFAR-10, CIFAR-100 or Monkey species
-num_epochs = 100
+num_epochs = 1000
 p_logvar_init = 0
 q_logvar_init = -10
 lr = 0.00001
