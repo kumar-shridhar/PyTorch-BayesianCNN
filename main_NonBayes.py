@@ -15,7 +15,7 @@ from utils.NonBayesianModels.ThreeConvThreeFC import ThreeConvThreeFC
 
 
 cuda = torch.cuda.is_available()
-#torch.cuda.set_device(1)
+torch.cuda.set_device(1)
 
 '''
 HYPERPARAMETERS
@@ -103,7 +103,7 @@ INSTANTIATE MODEL
 '''
 
 model = net(outputs=outputs, inputs=inputs)
-model = torch.nn.DataParallel(model, device_ids=[0,1]).cuda()
+#model = torch.nn.DataParallel(model, device_ids=[0,1]).cuda()
 
 if cuda:
     model.cuda()
