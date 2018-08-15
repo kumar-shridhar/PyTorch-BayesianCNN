@@ -7,6 +7,7 @@ import torchvision.transforms as transforms
 import torch.utils.data as data
 import torch.nn as nn
 
+from utils.NonBayesianModels.AlexNet import AlexNet
 from utils.NonBayesianModels.LeNet import LeNet
 from utils.NonBayesianModels.ELUN1 import ELUN1
 from utils.NonBayesianModels.ExperimentalCNNModel import CNN1
@@ -21,7 +22,7 @@ torch.cuda.set_device(1)
 HYPERPARAMETERS
 '''
 is_training = True  # set to "False" to only run validation
-net = LeNet
+net = AlexNet
 batch_size = 1024
 dataset = 'CIFAR-100'  # MNIST, CIFAR-10, CIFAR-100, Monkey species or LSUN
 num_epochs = 1000
@@ -31,6 +32,8 @@ weight_decay = 0.0005
 if net is LeNet:
     resize = 32
 elif net is ThreeConvThreeFC:
+    resize = 32
+elif net is AlexNet:
     resize = 32
 elif net is ELUN1:
     resize = 32
