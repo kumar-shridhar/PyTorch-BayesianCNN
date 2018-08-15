@@ -18,21 +18,21 @@ from utils.BayesianModels.BayesianSqueezeNet import BBBSqueezeNet
 
 cuda = torch.cuda.is_available()
 #print (cuda)
-torch.cuda.set_device(0)
+torch.cuda.set_device(1)
 
 '''
 HYPERPARAMETERS
 '''
 is_training = True  # set to "False" to only run validation
 num_samples = 10  # because of Casper's trick
-batch_size = 1024
+batch_size = 256
 beta_type = "Blundell"
 net = BBBLeNet
 dataset = 'CIFAR-100'  # MNIST, CIFAR-10, CIFAR-100 or Monkey species
 num_epochs = 1000
 p_logvar_init = 0
 q_logvar_init = -10
-lr = 0.00001
+lr = 0.001
 weight_decay = 0.0005
 
 # dimensions of input and output
@@ -218,7 +218,7 @@ for epoch in range(num_epochs):
 SAVE PARAMETERS
 '''
 if is_training:
-    weightsfile = os.path.join("weights_Bayes.pkl")
+    weightsfile = os.path.join("weights_{}_{}.pkl".format(net,dataset))
     with open(weightsfile, "wb") as wf:
         pickle.dump(model.state_dict(), wf)
 

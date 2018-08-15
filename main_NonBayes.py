@@ -25,7 +25,7 @@ net = LeNet
 batch_size = 1024
 dataset = 'CIFAR-100'  # MNIST, CIFAR-10, CIFAR-100, Monkey species or LSUN
 num_epochs = 1000
-lr = 0.00001
+lr = 0.001
 weight_decay = 0.0005
 
 if net is LeNet:
@@ -112,7 +112,7 @@ if cuda:
 criterion = nn.CrossEntropyLoss()
 optimiser = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=lr, weight_decay=weight_decay)
 
-logfile = os.path.join('diagnostics_MLE_F.txt')
+logfile = os.path.join('diagnostics_{}_{}.txt'.format(net,dataset))
 with open(logfile, 'w') as lf:
     lf.write('')
 
@@ -175,7 +175,7 @@ for epoch in range(num_epochs):
 SAVE PARAMETERS
 '''
 if is_training:
-    weightsfile = os.path.join("weights_MLE.pkl")
+    weightsfile = os.path.join("weights_{}_{}.pkl".format(net, dataset))
     with open(weightsfile, "wb") as wf:
         pickle.dump(model.state_dict(), wf)
 
