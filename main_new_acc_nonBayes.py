@@ -14,8 +14,9 @@ from utils.NonBayesianModels.ExperimentalCNNModel import CNN1
 from utils.NonBayesianModels.SqueezeNet import SqueezeNet
 from utils.NonBayesianModels.ThreeConvThreeFC import ThreeConvThreeFC
 
-
-device = torch.device('cuda:0' if torch.cuda.is_available() else 'cpu')
+cuda = torch.cuda.is_available()
+torch.cuda.set_device(1)
+#device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
 
 '''
 HYPERPARAMETERS
@@ -104,7 +105,7 @@ loader_val = data.DataLoader(dataset=val_dataset, batch_size=batch_size, shuffle
 INSTANTIATE MODEL
 '''
 #model = torch.nn.DataParallel(model, device_ids=[0,1]).cuda()
-model = net(outputs=outputs, inputs=inputs).to(device)
+model = net(outputs=outputs, inputs=inputs).cuda()
 
 
 # Loss and optimizer
@@ -114,8 +115,8 @@ optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_deca
 total_step = len(loader_train)
 for epoch in range(num_epochs):
     for i, (images, labels) in enumerate(loader_train):
-        images = images.to(device)
-        labels = labels.to(device)
+        images = images.cuda()
+        labels = labels.cuda()
 
         # Forward pass
         outputs = model(images)
@@ -136,8 +137,8 @@ with torch.no_grad():
     correct = 0
     total = 0
     for images, labels in loader_val:
-        images = images.to(device)
-        labels = labels.to(device)
+        images = images.cuda()
+        labels = labels.cuda()
         outputs = model(images)
         _, predicted = torch.max(outputs.data, 1)
         total += labels.size(0)
