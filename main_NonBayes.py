@@ -22,7 +22,7 @@ torch.cuda.set_device(1)
 HYPERPARAMETERS
 '''
 is_training = True  # set to "False" to only run validation
-net = LeNet
+net = AlexNet
 batch_size = 1024
 dataset = 'CIFAR-100'  # MNIST, CIFAR-10, CIFAR-100, Monkey species or LSUN
 num_epochs = 100
@@ -123,7 +123,7 @@ with open(logfile, 'w') as lf:
 def run_epoch(loader):
     #accuracies = []
     #losses = []
-    accuracy=0
+    correct=0
     total=0
 
     for i, (images, labels) in enumerate(loader):
@@ -144,15 +144,31 @@ def run_epoch(loader):
             loss.backward()
             optimiser.step()
 
-        _, predicted = outputs.max(1)
-        accuracy = (predicted.data.cpu() == y.cpu()).sum().item()
-        total += labels.size(0)
+            _, predicted = torch.max(outputs.data, 1)
+            correct += (predicted == labels).sum().item()
+            total += y.size(0)
+            
+        else:
+            model.eval()
+            with torch.no_grad():
+                correct = 0
+                total = 0
+                for images, labels in loader_val:
+                    x = images.view(-1, inputs, resize, resize)
+                    y = labels
+                    if cuda:
+                        x = x.cuda()
+                        y = y.cuda()
+                    outputs = model(x)
+                    _, predicted = torch.max(outputs.data, 1)
+                    total += labels.size(0)
+                    correct += (predicted == y).sum().item()
 
         #accuracies.append(accuracy)
         #losses.append(loss.data.item())
 
     diagnostics = {'loss': loss.item(),
-                   'acc': (100 * accuracy / total)}
+                   'acc': (100 * correct / total)}
 
     return diagnostics
 
