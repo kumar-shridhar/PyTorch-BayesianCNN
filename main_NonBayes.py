@@ -25,7 +25,7 @@ is_training = True  # set to "False" to only run validation
 net = AlexNet
 batch_size = 1024
 dataset = 'CIFAR-100'  # MNIST, CIFAR-10, CIFAR-100, Monkey species or LSUN
-num_epochs = 1000
+num_epochs = 100
 lr = 0.001
 weight_decay = 0.0005
 
@@ -121,8 +121,10 @@ with open(logfile, 'w') as lf:
 
 
 def run_epoch(loader):
-    accuracies = []
-    losses = []
+    #accuracies = []
+    #losses = []
+    accuracy=0
+    total=0
 
     for i, (images, labels) in enumerate(loader):
 
@@ -143,13 +145,14 @@ def run_epoch(loader):
             optimiser.step()
 
         _, predicted = outputs.max(1)
-        accuracy = (predicted.data.cpu() == y.cpu()).float().mean()
+        accuracy = (predicted.data.cpu() == y.cpu()).sum().item()
+        total += labels.size(0)
 
-        accuracies.append(accuracy)
-        losses.append(loss.data.mean())
+        #accuracies.append(accuracy)
+        #losses.append(loss.data.item())
 
-    diagnostics = {'loss': sum(losses) / len(losses),
-                   'acc': sum(accuracies) / len(accuracies)}
+    diagnostics = {'loss': loss.item(),
+                   'acc': (100 * accuracy / total)}
 
     return diagnostics
 
