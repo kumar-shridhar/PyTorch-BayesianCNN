@@ -22,7 +22,7 @@ torch.cuda.set_device(1)
 HYPERPARAMETERS
 '''
 is_training = True  # set to "False" to only run validation
-net = AlexNet
+net = LeNet
 batch_size = 1024
 dataset = 'CIFAR-100'  # MNIST, CIFAR-10, CIFAR-100, Monkey species or LSUN
 num_epochs = 100
