@@ -7,7 +7,6 @@ import torchvision.transforms as transforms
 import torch.utils.data as data
 import torch.nn as nn
 
-from utils.NonBayesianModels.AlexNet import AlexNet
 from utils.NonBayesianModels.LeNet import LeNet
 from utils.NonBayesianModels.ELUN1 import ELUN1
 from utils.NonBayesianModels.ExperimentalCNNModel import CNN1
@@ -16,24 +15,22 @@ from utils.NonBayesianModels.ThreeConvThreeFC import ThreeConvThreeFC
 
 
 cuda = torch.cuda.is_available()
-torch.cuda.set_device(1)
+#torch.cuda.set_device(1)
 
 '''
 HYPERPARAMETERS
 '''
 is_training = True  # set to "False" to only run validation
-net = AlexNet
-batch_size = 1024
+net = SqueezeNet
+batch_size = 512
 dataset = 'CIFAR-100'  # MNIST, CIFAR-10, CIFAR-100, Monkey species or LSUN
 num_epochs = 100
-lr = 0.001
+lr = 0.00001
 weight_decay = 0.0005
 
 if net is LeNet:
     resize = 32
 elif net is ThreeConvThreeFC:
-    resize = 32
-elif net is AlexNet:
     resize = 32
 elif net is ELUN1:
     resize = 32
@@ -106,7 +103,7 @@ INSTANTIATE MODEL
 '''
 
 model = net(outputs=outputs, inputs=inputs)
-#model = torch.nn.DataParallel(model, device_ids=[0,1]).cuda()
+model = torch.nn.DataParallel(model, device_ids=[0,1]).cuda()
 
 if cuda:
     model.cuda()
@@ -115,16 +112,14 @@ if cuda:
 criterion = nn.CrossEntropyLoss()
 optimiser = torch.optim.Adam(filter(lambda p: p.requires_grad, model.parameters()), lr=lr, weight_decay=weight_decay)
 
-logfile = os.path.join('diagnostics_{}_{}.txt'.format(net,dataset))
+logfile = os.path.join('diagnostics_MLE_F.txt')
 with open(logfile, 'w') as lf:
     lf.write('')
 
 
 def run_epoch(loader):
-    #accuracies = []
-    #losses = []
-    correct=0
-    total=0
+    accuracies = []
+    losses = []
 
     for i, (images, labels) in enumerate(loader):
 
@@ -144,31 +139,14 @@ def run_epoch(loader):
             loss.backward()
             optimiser.step()
 
-            _, predicted = torch.max(outputs.data, 1)
-            correct += (predicted == y).sum().item()
-            total += y.size(0)
+        _, predicted = outputs.max(1)
+        accuracy = (predicted.data.cpu() == y.cpu()).float().mean()
 
-        else:
-            model.eval()
-            with torch.no_grad():
-                correct = 0
-                total = 0
-                for images, labels in loader_val:
-                    x = images.view(-1, inputs, resize, resize)
-                    y = labels
-                    if cuda:
-                        x = x.cuda()
-                        y = y.cuda()
-                    outputs = model(x)
-                    _, predicted = torch.max(outputs.data, 1)
-                    total += y.size(0)
-                    correct += (predicted == y).sum().item()
+        accuracies.append(accuracy)
+        losses.append(loss.data.mean())
 
-        #accuracies.append(accuracy)
-        #losses.append(loss.data.item())
-
-    diagnostics = {'loss': loss.item(),
-                   'acc': (100 * correct / total)}
+    diagnostics = {'loss': sum(losses) / len(losses),
+                   'acc': sum(accuracies) / len(accuracies)}
 
     return diagnostics
 
@@ -197,7 +175,7 @@ for epoch in range(num_epochs):
 SAVE PARAMETERS
 '''
 if is_training:
-    weightsfile = os.path.join("weights_{}_{}.pkl".format(net, dataset))
+    weightsfile = os.path.join("weights_MLE.pkl")
     with open(weightsfile, "wb") as wf:
         pickle.dump(model.state_dict(), wf)
 
