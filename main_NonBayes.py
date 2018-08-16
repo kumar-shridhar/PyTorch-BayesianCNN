@@ -145,7 +145,7 @@ def run_epoch(loader):
             optimiser.step()
 
             _, predicted = torch.max(outputs.data, 1)
-            correct += (predicted == labels).sum().item()
+            correct += (predicted == y).sum().item()
             total += y.size(0)
 
         else:
