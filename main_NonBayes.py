@@ -147,7 +147,7 @@ def run_epoch(loader):
             _, predicted = torch.max(outputs.data, 1)
             correct += (predicted == labels).sum().item()
             total += y.size(0)
-            
+
         else:
             model.eval()
             with torch.no_grad():
@@ -161,7 +161,7 @@ def run_epoch(loader):
                         y = y.cuda()
                     outputs = model(x)
                     _, predicted = torch.max(outputs.data, 1)
-                    total += labels.size(0)
+                    total += y.size(0)
                     correct += (predicted == y).sum().item()
 
         #accuracies.append(accuracy)
