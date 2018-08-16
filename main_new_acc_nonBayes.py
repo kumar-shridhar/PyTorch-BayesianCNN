@@ -25,7 +25,7 @@ is_training = True  # set to "False" to only run validation
 net = LeNet
 batch_size = 1024
 dataset = 'CIFAR-100'  # MNIST, CIFAR-10, CIFAR-100, Monkey species or LSUN
-num_epochs = 1000
+num_epochs = 50
 lr = 0.001
 weight_decay = 0.0005
 
