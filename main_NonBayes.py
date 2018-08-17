@@ -140,7 +140,7 @@ def run_epoch(loader):
             optimiser.step()
 
         _, predicted = outputs.max(1)
-        accuracy = (predicted.data.cpu() == y.cpu())
+        accuracy = (predicted.data.cpu() == y.cpu()).float()
 
         accuracies.append(accuracy)
         losses.append(loss.item())
