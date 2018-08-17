@@ -95,12 +95,12 @@ def getNetwork(args):
     if (args.net_type == 'lenet'):
         net = LeNet(num_classes,inputs)
         file_name = 'lenet'
-    elif (args.net_type == 'vggnet'):
+    elif (args.net_type == 'alexnet'):
         net = AlexNet(args.depth, num_classes,inputs)
-        file_name = 'vgg-'+str(args.depth)
-    elif (args.net_type == 'resnet'):
+        file_name = 'alexnet-'+str(args.depth)
+    elif (args.net_type == 'squeezenet'):
         net = SqueezeNet(args.depth, num_classes,inputs)
-        file_name = 'resnet-'+str(args.depth)
+        file_name = 'squeezenet-'+str(args.depth)
     elif (args.net_type == 'resnet'):
         net = ResNet(args.depth, num_classes,inputs)
         file_name = 'resnet-' + str(args.depth)
