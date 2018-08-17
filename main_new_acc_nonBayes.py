@@ -18,6 +18,7 @@ import datetime
 
 from torch.autograd import Variable
 
+from utils.NonBayesianModels import conv_init
 from utils.NonBayesianModels.resnet import ResNet
 from utils.NonBayesianModels.AlexNet import AlexNet
 from utils.NonBayesianModels.LeNet import LeNet
