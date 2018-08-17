@@ -1,8 +1,16 @@
 import torch.nn as nn
+import torch.nn.functional as F
+import numpy as np
+
+def conv_init(m):
+    classname = m.__class__.__name__
+    if classname.find('Conv') != -1:
+        init.xavier_uniform(m.weight, gain=np.sqrt(2))
+        init.constant(m.bias, 0)
 
 class AlexNet(nn.Module):
 
-    def __init__(self, outputs, inputs):
+    def __init__(self, num_classes, inputs=3):
         super(AlexNet, self).__init__()
         self.features = nn.Sequential(
             nn.Conv2d(inputs, 64, kernel_size=11, stride=4, padding=5),
@@ -19,7 +27,7 @@ class AlexNet(nn.Module):
             nn.ReLU(inplace=True),
             nn.MaxPool2d(kernel_size=2, stride=2),
         )
-        self.classifier = nn.Linear(256, outputs)
+        self.classifier = nn.Linear(256, num_classes)
 
     def forward(self, x):
         x = self.features(x)

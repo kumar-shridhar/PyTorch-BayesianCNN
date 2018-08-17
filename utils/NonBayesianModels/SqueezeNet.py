@@ -1,6 +1,15 @@
-import torch
 import torch.nn as nn
+import torch.nn.functional as F
+import numpy as np
 from utils.BBBlayers import FlattenLayer
+
+
+def conv_init(m):
+    classname = m.__class__.__name__
+    if classname.find('Conv') != -1:
+        init.xavier_uniform(m.weight, gain=np.sqrt(2))
+        init.constant(m.bias, 0)
+
 
 class Fire(nn.Module):
 
@@ -27,9 +36,9 @@ class Fire(nn.Module):
 
 class SqueezeNet(nn.Module):
 
-    def __init__(self, outputs, inputs):
+    def __init__(self, inputs, num_classes):
         super(SqueezeNet, self).__init__()
-        self.outputs = outputs
+        self.num_classes = num_classes
         self.features = nn.Sequential(
             nn.Conv2d(inputs, 64, kernel_size=3, stride=2),
             nn.ReLU(inplace=True),
@@ -48,15 +57,15 @@ class SqueezeNet(nn.Module):
 
         self.classifier = nn.Sequential(
             nn.Dropout(p=0.5),
-            nn.Conv2d(512, self.outputs, kernel_size=1),
+            nn.Conv2d(512, self.num_classes, kernel_size=1),
             nn.ReLU(inplace=True),
             FlattenLayer(13 * 13 * 100),
-            nn.Linear(13 * 13 * 100, outputs)
+            nn.Linear(13 * 13 * 100, num_classes)
         )
 
     def forward(self, x):
         x = self.features(x)
         x = self.classifier(x)
         print('X', x)
-        return x.view(x.size(0), self.outputs)
+        return x.view(x.size(0), self.num_classes)
 
