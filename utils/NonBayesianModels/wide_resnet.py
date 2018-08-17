@@ -13,11 +13,11 @@ def conv3x3(in_planes, out_planes, stride=1):
 def conv_init(m):
     classname = m.__class__.__name__
     if classname.find('Conv') != -1:
-        init.xavier_uniform(m.weight, gain=np.sqrt(2))
-        init.constant(m.bias, 0)
+        nn.init.xavier_uniform(m.weight, gain=np.sqrt(2))
+        nn.init.constant(m.bias, 0)
     elif classname.find('BatchNorm') != -1:
-        init.constant(m.weight, 1)
-        init.constant(m.bias, 0)
+        nn.init.constant(m.weight, 1)
+        nn.init.constant(m.bias, 0)
 
 class wide_basic(nn.Module):
     def __init__(self, in_planes, planes, dropout_rate, stride=1):
