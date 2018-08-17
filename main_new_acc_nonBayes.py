@@ -1,150 +1,255 @@
-import os
-import pickle
+from __future__ import print_function
 
 import torch
-import torchvision.datasets as dsets
-import torchvision.transforms as transforms
-import torch.utils.data as data
 import torch.nn as nn
+import torch.optim as optim
+import torch.nn.functional as F
+import torch.backends.cudnn as cudnn
+import config as cf
 
+import torchvision
+import torchvision.transforms as transforms
+
+import os
+import sys
+import time
+import argparse
+import datetime
+
+from torch.autograd import Variable
+
+from utils.NonBayesianModels.resnet import ResNet
 from utils.NonBayesianModels.AlexNet import AlexNet
 from utils.NonBayesianModels.LeNet import LeNet
-from utils.NonBayesianModels.ELUN1 import ELUN1
-from utils.NonBayesianModels.ExperimentalCNNModel import CNN1
 from utils.NonBayesianModels.SqueezeNet import SqueezeNet
-from utils.NonBayesianModels.ThreeConvThreeFC import ThreeConvThreeFC
+from utils.NonBayesianModels.wide_resnet import Wide_ResNet
 
-cuda = torch.cuda.is_available()
-torch.cuda.set_device(1)
-#device = torch.device('cuda:1' if torch.cuda.is_available() else 'cpu')
+parser = argparse.ArgumentParser(description='PyTorch CIFAR-10 Training')
+parser.add_argument('--lr', default=0.1, type=float, help='learning_rate')
+parser.add_argument('--net_type', default='AlexNet', type=str, help='model')
+parser.add_argument('--depth', default=28, type=int, help='depth of model')
+parser.add_argument('--widen_factor', default=10, type=int, help='width of model')
+parser.add_argument('--dropout', default=0.3, type=float, help='dropout_rate')
+parser.add_argument('--dataset', default='cifar10', type=str, help='dataset = [mnist/cifar10/cifar100|fashionmnist]')
+parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
+parser.add_argument('--testOnly', '-t', action='store_true', help='Test mode with the saved model')
+args = parser.parse_args()
 
-'''
-HYPERPARAMETERS
-'''
-is_training = True  # set to "False" to only run validation
-net = LeNet
-batch_size = 1024
-dataset = 'CIFAR-100'  # MNIST, CIFAR-10, CIFAR-100, Monkey species or LSUN
-num_epochs = 200
-lr = 0.001
-weight_decay = 0.0005
+# Hyper Parameter settings
+use_cuda = torch.cuda.is_available()
+best_acc = 0
+start_epoch, num_epochs, batch_size, optim_type = cf.start_epoch, cf.num_epochs, cf.batch_size, cf.optim_type
 
-if net is LeNet:
-    resize = 32
-elif net is ThreeConvThreeFC:
-    resize = 32
-elif net is AlexNet:
-    resize = 32
-elif net is ELUN1:
-    resize = 32
-elif net is CNN1:
-    resize = 32
-elif net is SqueezeNet:
-    resize = 224
-else:
-    pass
+# Data Uplaod
+print('\n[Phase 1] : Data Preparation')
+transform_train = transforms.Compose([
+    transforms.RandomCrop(32, padding=4),
+    transforms.RandomHorizontalFlip(),
+    transforms.ToTensor(),
+    transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
+]) # meanstd transformation
 
-'''
-LOADING DATASET
-'''
-if dataset is 'MNIST':
-    outputs = 10
+transform_test = transforms.Compose([
+    transforms.ToTensor(),
+    transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
+])
+
+if(args.dataset == 'cifar10'):
+    print("| Preparing CIFAR-10 dataset...")
+    sys.stdout.write("| ")
+    trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_train)
+    testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=False, transform=transform_test)
+    num_classes = 10
+    inputs=3
+
+elif(args.dataset == 'cifar100'):
+    print("| Preparing CIFAR-100 dataset...")
+    sys.stdout.write("| ")
+    trainset = torchvision.datasets.CIFAR100(root='./data', train=True, download=True, transform=transform_train)
+    testset = torchvision.datasets.CIFAR100(root='./data', train=False, download=False, transform=transform_test)
+    num_classes = 100
+    inputs = 3
+    
+elif(args.dataset == 'mnist'):
+    print("| Preparing MNIST dataset...")
+    sys.stdout.write("| ")
+    trainset = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=transform_train)
+    testset = torchvision.datasets.MNIST(root='./data', train=False, download=False, transform=transform_test)
+    num_classes = 10
     inputs = 1
-    transform = transforms.Compose([transforms.Resize((resize, resize)), transforms.ToTensor(),
-                                    transforms.Normalize((0.1307,), (0.3081,))])
-    train_dataset = dsets.FashionMNIST(root="data", download=True, transform=transform)
-    val_dataset = dsets.FashionMNIST(root="data", download=True, train=False, transform=transform)
-
-elif dataset is 'CIFAR-100':
-    outputs = 100
+    
+elif(args.dataset == 'fashionmnist'):
+    print("| Preparing CIFAR-100 dataset...")
+    sys.stdout.write("| ")
+    trainset = torchvision.datasets.FashionMNIST(root='./data', train=True, download=True, transform=transform_train)
+    testset = torchvision.datasets.FashionMNIST(root='./data', train=False, download=False, transform=transform_test)
+    num_classes = 10
     inputs = 3
-    transform = transforms.Compose([transforms.Resize((resize, resize)), transforms.ToTensor(),
-                                    transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
-    train_dataset = dsets.CIFAR100(root="data", download=True, transform=transform)
-    val_dataset = dsets.CIFAR100(root="data", download=True, train=False, transform=transform)
 
-elif dataset is 'CIFAR-10':
-    outputs = 10
-    inputs = 3
-    transform = transforms.Compose([transforms.Resize((resize, resize)), transforms.ToTensor(),
-                                    transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
-    train_dataset = dsets.CIFAR10(root="data", download=True, transform=transform)
-    val_dataset = dsets.CIFAR10(root="data", download=True, train=False, transform=transform)
+trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=4)
+testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=4)
 
-elif dataset is 'Monkeys':
-    outputs = 10
-    inputs = 3
-    transform = transforms.Compose([transforms.Resize((resize, resize)), transforms.ToTensor(),
-                                    transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
-    train_dataset = dsets.ImageFolder(root="data/10-monkey-species/training", transform=transform)
-    val_dataset = dsets.ImageFolder(root="data/10-monkey-species/validation", transform=transform)
+# Return network & file name
+def getNetwork(args):
+    if (args.net_type == 'lenet'):
+        net = LeNet(num_classes,inputs)
+        file_name = 'lenet'
+    elif (args.net_type == 'vggnet'):
+        net = AlexNet(args.depth, num_classes,inputs)
+        file_name = 'vgg-'+str(args.depth)
+    elif (args.net_type == 'resnet'):
+        net = SqueezeNet(args.depth, num_classes,inputs)
+        file_name = 'resnet-'+str(args.depth)
+    elif (args.net_type == 'resnet'):
+        net = ResNet(args.depth, num_classes,inputs)
+        file_name = 'resnet-' + str(args.depth)
+    elif (args.net_type == 'wide-resnet'):
+        net = Wide_ResNet(args.depth, args.widen_factor, args.dropout, num_classes,inputs)
+        file_name = 'wide-resnet-'+str(args.depth)+'x'+str(args.widen_factor)
+    else:
+        print('Error : Network should be either [LeNet / AlexNet /SqueezeNet/ ResNet / Wide_ResNet')
+        sys.exit(0)
 
-elif dataset is 'LSUN':
-    outputs = 10
-    inputs = 3
-    transform = transforms.Compose([transforms.Resize((resize, resize)), transforms.ToTensor(),
-                                    transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
-    train_dataset = dsets.LSUN(root="data/lsun", classes="train", transform=transform)
-    val_dataset = dsets.LSUN(root="data/lsun", classes="val", transform=transform)
+    return net, file_name
 
-'''
-MAKING DATASET ITERABLE
-'''
+# Test only option
+if (args.testOnly):
+    print('\n[Test Phase] : Model setup')
+    assert os.path.isdir('checkpoint'), 'Error: No checkpoint directory found!'
+    _, file_name = getNetwork(args)
+    checkpoint = torch.load('./checkpoint/'+args.dataset+os.sep+file_name+'.t7')
+    net = checkpoint['net']
 
-print('length of training dataset:', len(train_dataset))
-n_iterations = num_epochs * (len(train_dataset) / batch_size)
-n_iterations = int(n_iterations)
-print('Number of iterations: ', n_iterations)
+    if use_cuda:
+        net.cuda()
+        net = torch.nn.DataParallel(net, device_ids=range(torch.cuda.device_count()))
+        cudnn.benchmark = True
 
-loader_train = data.DataLoader(dataset=train_dataset, batch_size=batch_size, shuffle=True)
-
-loader_val = data.DataLoader(dataset=val_dataset, batch_size=batch_size, shuffle=False)
-
-
-'''
-INSTANTIATE MODEL
-'''
-#model = torch.nn.DataParallel(model, device_ids=[0,1]).cuda()
-model = net(outputs=outputs, inputs=inputs).cuda()
-
-
-# Loss and optimizer
-criterion = nn.CrossEntropyLoss()
-optimizer = torch.optim.Adam(model.parameters(), lr=lr, weight_decay=weight_decay)
-
-total_step = len(loader_train)
-for epoch in range(num_epochs):
-    for i, (images, labels) in enumerate(loader_train):
-        images = images.cuda()
-        labels = labels.cuda()
-
-        # Forward pass
-        outputs = model(images)
-        loss = criterion(outputs, labels)
-
-        # Backward and optimize
-        optimizer.zero_grad()
-        loss.backward()
-        optimizer.step()
-
-        if (i + 1) % 100 == 0:
-            print ('Epoch [{}/{}], Step [{}/{}], Loss: {:.4f}'
-                   .format(epoch + 1, num_epochs, i + 1, total_step, loss.item()))
-
-# Test the model
-model.eval()  # eval mode (batchnorm uses moving mean/variance instead of mini-batch mean/variance)
-with torch.no_grad():
+    net.eval()
+    test_loss = 0
     correct = 0
     total = 0
-    for images, labels in loader_val:
-        images = images.cuda()
-        labels = labels.cuda()
-        outputs = model(images)
+
+    for batch_idx, (inputs, targets) in enumerate(testloader):
+        if use_cuda:
+            inputs, targets = inputs.cuda(), targets.cuda()
+        inputs, targets = Variable(inputs, volatile=True), Variable(targets)
+        outputs = net(inputs)
+
         _, predicted = torch.max(outputs.data, 1)
-        total += labels.size(0)
-        correct += (predicted == labels).sum().item()
+        total += targets.size(0)
+        correct += predicted.eq(targets.data).cpu().sum()
 
-    print('Test Accuracy on test images: {} %'.format(100 * correct / total))
+    acc = 100.*correct/total
+    print("| Test Result\tAcc@1: %.2f%%" %(acc))
 
-# Save the model checkpoint
-torch.save(model.state_dict(), 'model_new_acc.ckpt')
+    sys.exit(0)
+
+# Model
+print('\n[Phase 2] : Model setup')
+if args.resume:
+    # Load checkpoint
+    print('| Resuming from checkpoint...')
+    assert os.path.isdir('checkpoint'), 'Error: No checkpoint directory found!'
+    _, file_name = getNetwork(args)
+    checkpoint = torch.load('./checkpoint/'+args.dataset+os.sep+file_name+'.t7')
+    net = checkpoint['net']
+    best_acc = checkpoint['acc']
+    start_epoch = checkpoint['epoch']
+else:
+    print('| Building net type [' + args.net_type + ']...')
+    net, file_name = getNetwork(args)
+    net.apply(conv_init)
+
+if use_cuda:
+    net.cuda()
+    net = torch.nn.DataParallel(net, device_ids=range(torch.cuda.device_count()))
+    cudnn.benchmark = True
+
+criterion = nn.CrossEntropyLoss()
+
+# Training
+def train(epoch):
+    net.train()
+    train_loss = 0
+    correct = 0
+    total = 0
+    optimizer = optim.SGD(net.parameters(), lr=cf.learning_rate(args.lr, epoch), momentum=0.9, weight_decay=5e-4)
+
+    print('\n=> Training Epoch #%d, LR=%.4f' %(epoch, cf.learning_rate(args.lr, epoch)))
+    for batch_idx, (inputs, targets) in enumerate(trainloader):
+        if use_cuda:
+            inputs, targets = inputs.cuda(), targets.cuda() # GPU settings
+        optimizer.zero_grad()
+        inputs, targets = Variable(inputs), Variable(targets)
+        outputs = net(inputs)               # Forward Propagation
+        loss = criterion(outputs, targets)  # Loss
+        loss.backward()  # Backward Propagation
+        optimizer.step() # Optimizer update
+
+        train_loss += loss.data[0]
+        _, predicted = torch.max(outputs.data, 1)
+        total += targets.size(0)
+        correct += predicted.eq(targets.data).cpu().sum()
+
+        sys.stdout.write('\r')
+        sys.stdout.write('| Epoch [%3d/%3d] Iter[%3d/%3d]\t\tLoss: %.4f Acc@1: %.3f%%'
+                %(epoch, num_epochs, batch_idx+1,
+                    (len(trainset)//batch_size)+1, loss.data[0], 100.*correct/total))
+        sys.stdout.flush()
+
+def test(epoch):
+    global best_acc
+    net.eval()
+    test_loss = 0
+    correct = 0
+    total = 0
+    for batch_idx, (inputs, targets) in enumerate(testloader):
+        if use_cuda:
+            inputs, targets = inputs.cuda(), targets.cuda()
+        inputs, targets = Variable(inputs, volatile=True), Variable(targets)
+        outputs = net(inputs)
+        loss = criterion(outputs, targets)
+
+        test_loss += loss.data[0]
+        _, predicted = torch.max(outputs.data, 1)
+        total += targets.size(0)
+        correct += predicted.eq(targets.data).cpu().sum()
+
+    # Save checkpoint when best model
+    acc = 100.*correct/total
+    print("\n| Validation Epoch #%d\t\t\tLoss: %.4f Acc@1: %.2f%%" %(epoch, loss.data[0], acc))
+
+    if acc > best_acc:
+        print('| Saving Best model...\t\t\tTop1 = %.2f%%' %(acc))
+        state = {
+                'net':net.module if use_cuda else net,
+                'acc':acc,
+                'epoch':epoch,
+        }
+        if not os.path.isdir('checkpoint'):
+            os.mkdir('checkpoint')
+        save_point = './checkpoint/'+args.dataset+os.sep
+        if not os.path.isdir(save_point):
+            os.mkdir(save_point)
+        torch.save(state, save_point+file_name+'.t7')
+        best_acc = acc
+
+print('\n[Phase 3] : Training model')
+print('| Training Epochs = ' + str(num_epochs))
+print('| Initial Learning Rate = ' + str(args.lr))
+print('| Optimizer = ' + str(optim_type))
+
+elapsed_time = 0
+for epoch in range(start_epoch, start_epoch+num_epochs):
+    start_time = time.time()
+
+    train(epoch)
+    test(epoch)
+
+    epoch_time = time.time() - start_time
+    elapsed_time += epoch_time
+    print('| Elapsed time : %d:%02d:%02d'  %(cf.get_hms(elapsed_time)))
+
+print('\n[Phase 4] : Testing model')
+print('* Test results : Acc@1 = %.2f%%' %(best_acc))
