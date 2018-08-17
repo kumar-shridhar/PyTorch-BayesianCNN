@@ -5,8 +5,8 @@ import numpy as np
 def conv_init(m):
     classname = m.__class__.__name__
     if classname.find('Conv') != -1:
-        init.xavier_uniform(m.weight, gain=np.sqrt(2))
-        init.constant(m.bias, 0)
+        nn.init.xavier_uniform(m.weight, gain=np.sqrt(2))
+        nn.init.constant(m.bias, 0)
 
 class AlexNet(nn.Module):
 
