@@ -23,9 +23,9 @@ HYPERPARAMETERS
 is_training = True  # set to "False" to only run validation
 net = LeNet
 batch_size = 512
-dataset = 'CIFAR-100'  # MNIST, CIFAR-10, CIFAR-100, Monkey species or LSUN
-num_epochs = 100
-lr = 0.00001
+dataset = 'CIFAR-10'  # MNIST, CIFAR-10, CIFAR-100, Monkey species or LSUN
+num_epochs = 500
+lr = 0.001
 weight_decay = 0.0005
 
 if net is LeNet:
