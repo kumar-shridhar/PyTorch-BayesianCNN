@@ -140,10 +140,10 @@ def run_epoch(loader):
             optimiser.step()
 
         _, predicted = outputs.max(1)
-        accuracy = (predicted.data.cpu() == y.cpu()).float().mean()
+        accuracy = (predicted.data.cpu() == y.cpu())
 
         accuracies.append(accuracy)
-        losses.append(loss.data.mean())
+        losses.append(loss.item())
 
     diagnostics = {'loss': sum(losses) / len(losses),
                    'acc': sum(accuracies) / len(accuracies)}
