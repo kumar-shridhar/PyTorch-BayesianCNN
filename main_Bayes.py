@@ -9,6 +9,7 @@ import torchvision.datasets as dsets
 
 from utils.BBBlayers import GaussianVariationalInference
 from utils.BayesianModels.Bayesian3Conv3FC import BBB3Conv3FC
+from utils.BayesianModels.BayesianAlexNet import BBBAlexNet
 from utils.BayesianModels.BayesianELUN1 import BBBELUN1
 from utils.BayesianModels.BayesianExperimentalCNNModel import BBBCNN1
 from utils.BayesianModels.BayesianLeNet import BBBLeNet
@@ -18,7 +19,7 @@ from utils.BayesianModels.BayesianSqueezeNet import BBBSqueezeNet
 
 cuda = torch.cuda.is_available()
 #print (cuda)
-torch.cuda.set_device(1)
+torch.cuda.set_device(0)
 
 '''
 HYPERPARAMETERS
@@ -27,9 +28,9 @@ is_training = True  # set to "False" to only run validation
 num_samples = 10  # because of Casper's trick
 batch_size = 256
 beta_type = "Blundell"
-net = BBBLeNet
+net = BBBAlexNet
 dataset = 'CIFAR-100'  # MNIST, CIFAR-10, CIFAR-100 or Monkey species
-num_epochs = 1000
+num_epochs = 300
 p_logvar_init = 0
 q_logvar_init = -10
 lr = 0.001
@@ -54,6 +55,8 @@ else:
 if net is BBBLeNet:
     resize = 32
 elif net is BBB3Conv3FC:
+    resize = 32
+elif net is BBBAlexNet:
     resize = 32
 elif net is BBBELUN1:
     resize = 32
