@@ -4,7 +4,7 @@ from utils.BBBlayers import BBBConv2d, BBBLinearFactorial, FlattenLayer
 
 
 class BBBAlexNet(nn.Module):
-    '''The architecture of LeNet with Bayesian Layers'''
+    '''The architecture of AlexNet with Bayesian Layers'''
 
     def __init__(self, outputs, inputs):
         super(BBBAlexNet, self).__init__()
@@ -12,22 +12,23 @@ class BBBAlexNet(nn.Module):
         self.soft1 = nn.Softplus()
         self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
 
-        self.conv2 = BBBConv2d(64, 192, kernel_size=5, padding=2),
+        self.conv2 = BBBConv2d(64, 192, kernel_size=5, padding=2)
         self.soft2 = nn.Softplus()
         self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
 
-        self.conv3 = BBBConv2d(192, 384, kernel_size=3, padding=1),
+        self.conv3 = BBBConv2d(192, 384, kernel_size=3, padding=1)
         self.soft3 = nn.Softplus()
 
-        self.conv4 = BBBConv2d(384, 256, kernel_size=3, padding=1),
+        self.conv4 = BBBConv2d(384, 256, kernel_size=3, padding=1)
         self.soft4 = nn.Softplus()
 
-        self.conv5 = BBBConv2d(256, 256, kernel_size=3, padding=1),
+        self.conv5 = BBBConv2d(256, 128, kernel_size=3, padding=1)
         self.soft5 = nn.Softplus()
         self.pool3 = nn.MaxPool2d(kernel_size=2, stride=2)
 
-        self.flatten = FlattenLayer(5 * 5 * 256)
-        self.fc1 = BBBLinearFactorial(5 * 5 * 256, outputs)
+        self.flatten = FlattenLayer(16 * 16 * 1280)
+        self.fc1 = BBBLinearFactorial(16 * 16 * 1280, outputs)
+
 
         layers = [self.conv1, self.soft1, self.pool1, self.conv2, self.soft2, self.pool2, self.conv3, self.soft3,
                   self.conv4, self.soft4, self.conv5, self.soft5, self.pool3, self.flatten, self.fc1]
