@@ -23,8 +23,8 @@ HYPERPARAMETERS
 is_training = True  # set to "False" to only run validation
 net = LeNet
 batch_size = 512
-dataset = 'CIFAR-10'  # MNIST, CIFAR-10, CIFAR-100, Monkey species or LSUN
-num_epochs = 500
+dataset = 'STL10'  # MNIST, CIFAR-10, CIFAR-100, Monkey species or LSUN
+num_epochs = 100
 lr = 0.001
 weight_decay = 0.0005
 
@@ -83,6 +83,11 @@ elif dataset is 'LSUN':
                                     transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
     train_dataset = dsets.LSUN(root="data/lsun", classes="train", transform=transform)
     val_dataset = dsets.LSUN(root="data/lsun", classes="val", transform=transform)
+elif dataset is 'STL10':
+    transform = transforms.Compose([transforms.Resize((resize, resize)), transforms.ToTensor(),
+                                    transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
+    train_dataset = dsets.STL10(root="data/", transform=transform,download=True)
+    val_dataset = dsets.STL10(root="data/", transform=transform,download=True)
 
 '''
 MAKING DATASET ITERABLE
