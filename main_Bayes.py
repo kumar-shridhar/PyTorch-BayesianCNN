@@ -19,7 +19,7 @@ from utils.BayesianModels.BayesianSqueezeNet import BBBSqueezeNet
 
 cuda = torch.cuda.is_available()
 #print (cuda)
-torch.cuda.set_device(0)
+torch.cuda.set_device(1)
 
 '''
 HYPERPARAMETERS
@@ -49,6 +49,9 @@ elif dataset is 'CIFAR-100':    # train with CIFAR-100
 elif dataset is 'Monkeys':    # train with Monkey species
     outputs = 10
     inputs = 3
+elif dataset is 'STL10':
+    outputs=10
+    inputs=3
 else:
     pass
 
@@ -94,6 +97,12 @@ elif dataset is 'Monkeys':
                                     transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
     train_dataset = dsets.ImageFolder(root="data/10-monkey-species/training", transform=transform)
     val_dataset = dsets.ImageFolder(root="data/10-monkey-species/validation", transform=transform)
+elif dataset is 'STL10':
+    transform = transforms.Compose([transforms.Resize((resize, resize)), transforms.ToTensor(),
+                                    transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
+    train_dataset = dsets.STL10(root="data/", transform=transform,download=True)
+    val_dataset = dsets.STL10(root="data/", transform=transform,download=True)
+
 
 '''
 MAKING DATASET ITERABLE
