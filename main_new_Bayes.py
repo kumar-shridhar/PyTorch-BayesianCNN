@@ -138,8 +138,6 @@ else:
 
 if use_cuda:
     net.cuda()
-    net = torch.nn.DataParallel(net, device_ids=range(torch.cuda.device_count()))
-    cudnn.benchmark = True
 
 vi = GaussianVariationalInference(torch.nn.CrossEntropyLoss())
 
