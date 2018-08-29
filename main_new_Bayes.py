@@ -31,7 +31,7 @@ from utils.BayesianModels.BayesianSqueezeNet import BBBSqueezeNet
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR-10 Training')
 parser.add_argument('--lr', default=0.01, type=float, help='learning_rate')
-parser.add_argument('--net_type', default='BBBLeNet', type=str, help='model')
+parser.add_argument('--net_type', default='lenet', type=str, help='model')
 #parser.add_argument('--depth', default=28, type=int, help='depth of model')
 #parser.add_argument('--widen_factor', default=10, type=int, help='width of model')
 parser.add_argument('--dropout', default=0.3, type=float, help='dropout_rate')
