@@ -84,6 +84,8 @@ elif dataset is 'LSUN':
     train_dataset = dsets.LSUN(root="data/lsun", classes="train", transform=transform)
     val_dataset = dsets.LSUN(root="data/lsun", classes="val", transform=transform)
 elif dataset is 'STL10':
+    outputs = 10
+    inputs = 3
     transform = transforms.Compose([transforms.Resize((resize, resize)), transforms.ToTensor(),
                                     transforms.Normalize((0.485, 0.456, 0.406), (0.229, 0.224, 0.225))])
     train_dataset = dsets.STL10(root="data/", transform=transform,download=True)
@@ -107,8 +109,8 @@ loader_val = data.DataLoader(dataset=val_dataset, batch_size=batch_size, shuffle
 INSTANTIATE MODEL
 '''
 
-model = net(outputs=outputs, inputs=inputs)
-model = torch.nn.DataParallel(model, device_ids=[0,1]).cuda()
+model = net(num_classes=outputs, inputs=inputs)
+model = torch.nn.DataParallel(model, device_ids=[0]).cuda()
 
 if cuda:
     model.cuda()

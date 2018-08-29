@@ -19,17 +19,17 @@ from utils.BayesianModels.BayesianSqueezeNet import BBBSqueezeNet
 
 cuda = torch.cuda.is_available()
 #print (cuda)
-torch.cuda.set_device(1)
+torch.cuda.set_device(0)
 
 '''
 HYPERPARAMETERS
 '''
 is_training = True  # set to "False" to only run validation
 num_samples = 10  # because of Casper's trick
-batch_size = 256
+batch_size = 128
 beta_type = "Blundell"
 net = BBBLeNet
-dataset = 'CIFAR-100'  # MNIST, CIFAR-10, CIFAR-100 or Monkey species
+dataset = 'STL10'  # MNIST, CIFAR-10, CIFAR-100 or Monkey species
 num_epochs = 100
 p_logvar_init = 0
 q_logvar_init = -10
