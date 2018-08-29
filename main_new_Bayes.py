@@ -34,7 +34,6 @@ parser.add_argument('--lr', default=0.01, type=float, help='learning_rate')
 parser.add_argument('--net_type', default='lenet', type=str, help='model')
 #parser.add_argument('--depth', default=28, type=int, help='depth of model')
 #parser.add_argument('--widen_factor', default=10, type=int, help='width of model')
-parser.add_argument('--dropout', default=0.3, type=float, help='dropout_rate')
 parser.add_argument('--num_samples', default=10, type=int, help='Number of samples')
 parser.add_argument('--beta_type', default="Blundell", type=str, help='Beta type')
 parser.add_argument('--p_logvar_init', default=0, type=int, help='p_logvar_init')
@@ -89,7 +88,7 @@ elif (args.dataset == 'mnist'):
     inputs = 1
 
 elif (args.dataset == 'fashionmnist'):
-    print("| Preparing CIFAR-100 dataset...")
+    print("| Preparing FASHIONMNIST dataset...")
     sys.stdout.write("| ")
     trainset = torchvision.datasets.FashionMNIST(root='./data', train=True, download=True, transform=transform_train)
     testset = torchvision.datasets.FashionMNIST(root='./data', train=False, download=False, transform=transform_test)
@@ -148,7 +147,7 @@ def train(epoch):
     correct = 0
     total = 0
     m = math.ceil(len(trainset) / batch_size)
-    optimizer = optim.SGD(net.parameters(), lr=cf.learning_rate(args.lr, epoch), momentum=0.9, weight_decay=args.weight_decay)
+    optimizer = optim.Adam(net.parameters(), lr=cf.learning_rate(args.lr, epoch), weight_decay=args.weight_decay)
 
     print('\n=> Training Epoch #%d, LR=%.4f' %(epoch, cf.learning_rate(args.lr, epoch)))
     for batch_idx, (inputs, targets) in enumerate(trainloader):
