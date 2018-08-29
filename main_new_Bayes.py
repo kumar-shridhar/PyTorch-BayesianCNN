@@ -107,15 +107,15 @@ def getNetwork(args):
         file_name = 'lenet'
     elif (args.net_type == 'alexnet'):
         net = BBBAlexNet(num_classes,inputs)
-        file_name = 'alexnet-'+str(args.depth)
+        file_name = 'alexnet-'
     elif (args.net_type == 'squeezenet'):
         net = BBBSqueezeNet(num_classes,inputs)
-        file_name = 'squeezenet-'+str(args.depth)
+        file_name = 'squeezenet-'
     elif (args.net_type == '3Conv3FC'):
-        net = BBB3Conv3FC(args.depth, num_classes,inputs)
-        file_name = '3Conv3FC-' + str(args.depth)
+        net = BBB3Conv3FC(num_classes,inputs)
+        file_name = '3Conv3FC-'
     else:
-        print('Error : Network should be either [LeNet / AlexNet /SqueezeNet/ ResNet / Wide_ResNet')
+        print('Error : Network should be either [LeNet / AlexNet /SqueezeNet/ 3Conv3FC')
         sys.exit(0)
 
     return net, file_name
@@ -168,7 +168,7 @@ def train(epoch):
         # Forward Propagation
         optimizer.zero_grad()
         inputs, targets = Variable(inputs), Variable(targets)
-        outputs, kl = net(inputs)
+        outputs, kl = net.probforward(inputs)
         loss = vi(outputs, targets, kl, beta)  # Loss
 
         loss.backward()  # Backward Propagation
@@ -196,7 +196,7 @@ def test(epoch):
         if use_cuda:
             inputs, targets = inputs.cuda(), targets.cuda()
         inputs, targets = Variable(inputs, volatile=True), Variable(targets)
-        outputs, kl = net(inputs)
+        outputs, kl = net.probforward(inputs)
 
         if args.beta_type is "Blundell":
             beta = 2 ** (m - (batch_idx + 1)) / (2 ** m - 1)
