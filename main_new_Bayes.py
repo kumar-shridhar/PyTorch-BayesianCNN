@@ -219,7 +219,7 @@ def test(epoch):
     if acc > best_acc:
         print('| Saving Best model...\t\t\tTop1 = %.2f%%' %(acc))
         state = {
-                'net':net.module if use_cuda else net,
+                'net':net if use_cuda else net,
                 'acc':acc,
                 'epoch':epoch,
         }
