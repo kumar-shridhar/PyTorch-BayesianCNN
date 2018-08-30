@@ -151,7 +151,7 @@ def train(epoch):
     print('\n=> Training Epoch #%d, LR=%.4f' %(epoch, cf.learning_rate(args.lr, epoch)))
     for batch_idx, (inputs_value, targets) in enumerate(trainloader):
 
-        x = inputs_value.view(-1, inputs_value, 32, 32).repeat(args.num_samples, 1, 1, 1)
+        x = inputs_value.view(-1, inputs, 32, 32).repeat(args.num_samples, 1, 1, 1)
         y = targets.repeat(args.num_samples)
         if use_cuda:
             x, y = x.cuda(), y.cuda() # GPU settings
@@ -191,7 +191,7 @@ def test(epoch):
     total = 0
     m = math.ceil(len(testset) / batch_size)
     for batch_idx, (inputs_value, targets) in enumerate(testloader):
-        x = inputs_value.view(-1, inputs_value, 32, 32).repeat(args.num_samples, 1, 1, 1)
+        x = inputs_value.view(-1, inputs, 32, 32).repeat(args.num_samples, 1, 1, 1)
         y = targets.repeat(args.num_samples)
         if use_cuda:
             x, y = x.cuda(), y.cuda()
