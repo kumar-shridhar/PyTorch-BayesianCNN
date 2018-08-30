@@ -26,8 +26,8 @@ from utils.NonBayesianModels.SqueezeNet import SqueezeNet
 from utils.NonBayesianModels.wide_resnet import Wide_ResNet
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR-10 Training')
-parser.add_argument('--lr', default=0.1, type=float, help='learning_rate')
-parser.add_argument('--net_type', default='AlexNet', type=str, help='model')
+parser.add_argument('--lr', default=0.001, type=float, help='learning_rate')
+parser.add_argument('--net_type', default='lenet', type=str, help='model')
 parser.add_argument('--depth', default=28, type=int, help='depth of model')
 parser.add_argument('--widen_factor', default=10, type=int, help='width of model')
 parser.add_argument('--dropout', default=0.3, type=float, help='dropout_rate')
