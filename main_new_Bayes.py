@@ -151,10 +151,10 @@ def train(epoch):
     print('\n=> Training Epoch #%d, LR=%.4f' %(epoch, cf.learning_rate(args.lr, epoch)))
     for batch_idx, (inputs, targets) in enumerate(trainloader):
 
-        inputs = inputs.view(-1, inputs, 32, 32).repeat(args.num_samples, 1, 1, 1)
-        targets = targets.repeat(args.num_samples)
+        x = inputs.view(-1, inputs, 32, 32).repeat(args.num_samples, 1, 1, 1)
+        y = targets.repeat(args.num_samples)
         if use_cuda:
-            inputs, targets = inputs.cuda(), targets.cuda() # GPU settings
+            x, y = x.cuda(), y.cuda() # GPU settings
 
         if args.beta_type is "Blundell":
             beta = 2 ** (m - (batch_idx + 1)) / (2 ** m - 1)
@@ -165,9 +165,9 @@ def train(epoch):
         else:
             beta = 0
         # Forward Propagation
-        inputs, targets = Variable(inputs), Variable(targets)
-        outputs, kl = net.probforward(inputs)
-        loss = vi(outputs, targets, kl, beta)  # Loss
+        x, y = Variable(x), Variable(y)
+        outputs, kl = net.probforward(x)
+        loss = vi(outputs, y, kl, beta)  # Loss
         optimizer.zero_grad()
         loss.backward()  # Backward Propagation
         optimizer.step() # Optimizer update
@@ -175,7 +175,7 @@ def train(epoch):
         train_loss += loss.data[0]
         _, predicted = torch.max(outputs.data, 1)
         total += targets.size(0)
-        correct += predicted.eq(targets.data).cpu().sum()
+        correct += predicted.eq(y.data).cpu().sum()
 
         sys.stdout.write('\r')
         sys.stdout.write('| Epoch [%3d/%3d] Iter[%3d/%3d]\t\tLoss: %.4f Acc@1: %.3f%%'
@@ -191,12 +191,12 @@ def test(epoch):
     total = 0
     m = math.ceil(len(testset) / batch_size)
     for batch_idx, (inputs, targets) in enumerate(testloader):
-        inputs = inputs.view(-1, inputs, 32, 32).repeat(args.num_samples, 1, 1, 1)
-        targets = targets.repeat(args.num_samples)
+        x = inputs.view(-1, inputs, 32, 32).repeat(args.num_samples, 1, 1, 1)
+        y = targets.repeat(args.num_samples)
         if use_cuda:
-            inputs, targets = inputs.cuda(), targets.cuda()
-        inputs, targets = Variable(inputs, volatile=True), Variable(targets)
-        outputs, kl = net.probforward(inputs)
+            x, y = x.cuda(), y.cuda()
+        x, y = Variable(x, volatile=True), Variable(y)
+        outputs, kl = net.probforward(x)
 
         if args.beta_type is "Blundell":
             beta = 2 ** (m - (batch_idx + 1)) / (2 ** m - 1)
@@ -207,12 +207,12 @@ def test(epoch):
         else:
             beta = 0
 
-        loss = vi(outputs,targets,kl,beta)
+        loss = vi(outputs,y,kl,beta)
 
         test_loss += loss.data[0]
         _, predicted = torch.max(outputs.data, 1)
         total += targets.size(0)
-        correct += predicted.eq(targets.data).cpu().sum()
+        correct += predicted.eq(y.data).cpu().sum()
 
     # Save checkpoint when best model
     acc = 100.*correct/total
