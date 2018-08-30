@@ -31,7 +31,7 @@ from utils.BayesianModels.BayesianSqueezeNet import BBBSqueezeNet
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR-10 Training')
 parser.add_argument('--lr', default=0.001, type=float, help='learning_rate')
-parser.add_argument('--net_type', default='lenet', type=str, help='model')
+parser.add_argument('--net_type', default='3Conv3FC', type=str, help='model')
 #parser.add_argument('--depth', default=28, type=int, help='depth of model')
 #parser.add_argument('--widen_factor', default=10, type=int, help='width of model')
 parser.add_argument('--num_samples', default=10, type=int, help='Number of samples')
@@ -39,7 +39,7 @@ parser.add_argument('--beta_type', default="Blundell", type=str, help='Beta type
 parser.add_argument('--p_logvar_init', default=0, type=int, help='p_logvar_init')
 parser.add_argument('--q_logvar_init', default=-10, type=int, help='q_logvar_init')
 parser.add_argument('--weight_decay', default=0.0005, type=float, help='weight_decay')
-parser.add_argument('--dataset', default='stl10', type=str, help='dataset = [mnist/cifar10/cifar100/fashionmnist/stl10]')
+parser.add_argument('--dataset', default='cifar10', type=str, help='dataset = [mnist/cifar10/cifar100/fashionmnist/stl10]')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 parser.add_argument('--testOnly', '-t', action='store_true', help='Test mode with the saved model')
 args = parser.parse_args()
@@ -209,7 +209,8 @@ def test(epoch):
         y = targets.repeat(args.num_samples)
         if use_cuda:
             x, y = x.cuda(), y.cuda()
-        x, y = Variable(x, volatile=True), Variable(y)
+        with torch.no_grad():
+            x, y = Variable(x), Variable(y)
         outputs, kl = net.probforward(x)
 
         if args.beta_type is "Blundell":

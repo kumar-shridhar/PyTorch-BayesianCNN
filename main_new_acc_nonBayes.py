@@ -24,14 +24,15 @@ from utils.NonBayesianModels.AlexNet import AlexNet
 from utils.NonBayesianModels.LeNet import LeNet
 from utils.NonBayesianModels.SqueezeNet import SqueezeNet
 from utils.NonBayesianModels.wide_resnet import Wide_ResNet
+from utils.NonBayesianModels.ThreeConvThreeFC import ThreeConvThreeFC
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR-10 Training')
 parser.add_argument('--lr', default=0.001, type=float, help='learning_rate')
-parser.add_argument('--net_type', default='lenet', type=str, help='model')
+parser.add_argument('--net_type', default='3conv3fc', type=str, help='model')
 parser.add_argument('--depth', default=28, type=int, help='depth of model')
 parser.add_argument('--widen_factor', default=10, type=int, help='width of model')
 parser.add_argument('--dropout', default=0.3, type=float, help='dropout_rate')
-parser.add_argument('--dataset', default='stl10', type=str, help='dataset = [mnist/cifar10/cifar100/fashionmnist/stl10]')
+parser.add_argument('--dataset', default='cifar10', type=str, help='dataset = [mnist/cifar10/cifar100/fashionmnist/stl10]')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 parser.add_argument('--testOnly', '-t', action='store_true', help='Test mode with the saved model')
 args = parser.parse_args()
@@ -104,10 +105,13 @@ def getNetwork(args):
         file_name = 'lenet'
     elif (args.net_type == 'alexnet'):
         net = AlexNet(num_classes,inputs)
-        file_name = 'alexnet-'+str(args.depth)
+        file_name = 'alexnet-'
+    elif (args.net_type == '3conv3fc'):
+        net = AlexNet(num_classes, inputs)
+        file_name = 'ThreeConvThreeFC-'
     elif (args.net_type == 'squeezenet'):
         net = SqueezeNet(num_classes,inputs)
-        file_name = 'squeezenet-'+str(args.depth)
+        file_name = 'squeezenet-'
     elif (args.net_type == 'resnet'):
         net = ResNet(args.depth, num_classes,inputs)
         file_name = 'resnet-' + str(args.depth)
@@ -183,7 +187,7 @@ def train(epoch):
     train_loss = 0
     correct = 0
     total = 0
-    optimizer = optim.SGD(net.parameters(), lr=cf.learning_rate(args.lr, epoch), momentum=0.9, weight_decay=5e-4)
+    optimizer = optim.Adam(net.parameters(), lr=cf.learning_rate(args.lr, epoch), weight_decay=5e-4)
 
     print('\n=> Training Epoch #%d, LR=%.4f' %(epoch, cf.learning_rate(args.lr, epoch)))
     for batch_idx, (inputs, targets) in enumerate(trainloader):
@@ -219,7 +223,8 @@ def test(epoch):
     for batch_idx, (inputs, targets) in enumerate(testloader):
         if use_cuda:
             inputs, targets = inputs.cuda(), targets.cuda()
-        inputs, targets = Variable(inputs, volatile=True), Variable(targets)
+        with torch.no_grad():
+            inputs, targets = Variable(inputs), Variable(targets)
         outputs = net(inputs)
         loss = criterion(outputs, targets)
 
