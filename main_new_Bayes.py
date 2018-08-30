@@ -187,7 +187,7 @@ def train(epoch):
 
         diagnostics_to_write =  {'Epoch': epoch, 'Loss': loss.data[0]/10, 'Accuracy': 10*correct/total}
         with open(logfile, 'a') as lf:
-            lf.write(diagnostics_to_write)
+            lf.write(str(diagnostics_to_write))
 
 def test(epoch):
     global best_acc
@@ -225,7 +225,7 @@ def test(epoch):
     print("\n| Validation Epoch #%d\t\t\tLoss: %.4f Acc@1: %.2f%%" %(epoch, loss.data[0]/10, acc))
     test_diagnostics_to_write = {'Validation Epoch':epoch, 'Loss':loss.data[0]/10, 'Accuracy': acc  }
     with open(logfile, 'a') as lf:
-        lf.write(test_diagnostics_to_write)
+        lf.write(str(test_diagnostics_to_write))
 
     if acc > best_acc:
         print('| Saving Best model...\t\t\tTop1 = %.2f%%' %(acc))
