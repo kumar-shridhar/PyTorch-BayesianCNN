@@ -4,7 +4,7 @@ import math
 start_epoch = 1
 num_epochs = 200
 batch_size = 128
-optim_type = 'SGD'
+optim_type = 'Adam'
 
 mean = {
     'cifar10': (0.4914, 0.4822, 0.4465),
