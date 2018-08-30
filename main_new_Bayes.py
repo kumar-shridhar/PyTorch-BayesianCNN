@@ -30,7 +30,7 @@ from utils.BayesianModels.BayesianSqueezeNet import BBBSqueezeNet
 
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR-10 Training')
-parser.add_argument('--lr', default=0.01, type=float, help='learning_rate')
+parser.add_argument('--lr', default=0.001, type=float, help='learning_rate')
 parser.add_argument('--net_type', default='lenet', type=str, help='model')
 #parser.add_argument('--depth', default=28, type=int, help='depth of model')
 #parser.add_argument('--widen_factor', default=10, type=int, help='width of model')
@@ -52,7 +52,6 @@ start_epoch, num_epochs, batch_size, optim_type = cf.start_epoch, cf.num_epochs,
 # Data Uplaod
 print('\n[Phase 1] : Data Preparation')
 transform_train = transforms.Compose([
-    transforms.RandomCrop(32, padding=4),
     transforms.RandomHorizontalFlip(),
     transforms.ToTensor(),
     transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
@@ -96,7 +95,7 @@ elif (args.dataset == 'fashionmnist'):
     inputs = 3
 
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=4)
-testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=4)
+testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size, shuffle=False, num_workers=4)
 
 
 # Return network & file name
@@ -151,6 +150,9 @@ def train(epoch):
 
     print('\n=> Training Epoch #%d, LR=%.4f' %(epoch, cf.learning_rate(args.lr, epoch)))
     for batch_idx, (inputs, targets) in enumerate(trainloader):
+
+        inputs = inputs.view(-1, inputs, 32, 32).repeat(args.num_samples, 1, 1, 1)
+        targets = targets.repeat(args.num_samples)
         if use_cuda:
             inputs, targets = inputs.cuda(), targets.cuda() # GPU settings
 
@@ -163,11 +165,10 @@ def train(epoch):
         else:
             beta = 0
         # Forward Propagation
-        optimizer.zero_grad()
         inputs, targets = Variable(inputs), Variable(targets)
         outputs, kl = net.probforward(inputs)
         loss = vi(outputs, targets, kl, beta)  # Loss
-
+        optimizer.zero_grad()
         loss.backward()  # Backward Propagation
         optimizer.step() # Optimizer update
 
@@ -190,6 +191,8 @@ def test(epoch):
     total = 0
     m = math.ceil(len(testset) / batch_size)
     for batch_idx, (inputs, targets) in enumerate(testloader):
+        inputs = inputs.view(-1, inputs, 32, 32).repeat(args.num_samples, 1, 1, 1)
+        targets = targets.repeat(args.num_samples)
         if use_cuda:
             inputs, targets = inputs.cuda(), targets.cuda()
         inputs, targets = Variable(inputs, volatile=True), Variable(targets)
@@ -204,7 +207,7 @@ def test(epoch):
         else:
             beta = 0
 
-        loss = vi(outputs, targets,kl,beta)
+        loss = vi(outputs,targets,kl,beta)
 
         test_loss += loss.data[0]
         _, predicted = torch.max(outputs.data, 1)
