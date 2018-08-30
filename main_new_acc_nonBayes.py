@@ -31,7 +31,7 @@ parser.add_argument('--net_type', default='lenet', type=str, help='model')
 parser.add_argument('--depth', default=28, type=int, help='depth of model')
 parser.add_argument('--widen_factor', default=10, type=int, help='width of model')
 parser.add_argument('--dropout', default=0.3, type=float, help='dropout_rate')
-parser.add_argument('--dataset', default='cifar100', type=str, help='dataset = [mnist/cifar10/cifar100/fashionmnist]')
+parser.add_argument('--dataset', default='stl10', type=str, help='dataset = [mnist/cifar10/cifar100/fashionmnist/stl10]')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 parser.add_argument('--testOnly', '-t', action='store_true', help='Test mode with the saved model')
 args = parser.parse_args()
@@ -85,6 +85,13 @@ elif(args.dataset == 'fashionmnist'):
     trainset = torchvision.datasets.FashionMNIST(root='./data', train=True, download=True, transform=transform_train)
     testset = torchvision.datasets.FashionMNIST(root='./data', train=False, download=False, transform=transform_test)
     num_classes = 10
+    inputs = 3
+elif (args.dataset == 'stl10'):
+    print("| Preparing STL10 dataset...")
+    sys.stdout.write("| ")
+    trainset = torchvision.datasets.STL10(root='./data', train=True, download=True, transform=transform_train)
+    testset = torchvision.datasets.STL10(root='./data', train=False, download=False, transform=transform_test)
+    outputs = 10
     inputs = 3
 
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=4)
