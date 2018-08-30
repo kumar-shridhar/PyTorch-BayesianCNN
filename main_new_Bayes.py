@@ -67,7 +67,7 @@ if (args.dataset == 'cifar10'):
     sys.stdout.write("| ")
     trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_train)
     testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=False, transform=transform_test)
-    num_classes = 10
+    outputs = 10
     inputs = 3
 
 elif (args.dataset == 'cifar100'):
@@ -75,7 +75,7 @@ elif (args.dataset == 'cifar100'):
     sys.stdout.write("| ")
     trainset = torchvision.datasets.CIFAR100(root='./data', train=True, download=True, transform=transform_train)
     testset = torchvision.datasets.CIFAR100(root='./data', train=False, download=False, transform=transform_test)
-    num_classes = 100
+    outputs = 100
     inputs = 3
 
 elif (args.dataset == 'mnist'):
@@ -83,7 +83,7 @@ elif (args.dataset == 'mnist'):
     sys.stdout.write("| ")
     trainset = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=transform_train)
     testset = torchvision.datasets.MNIST(root='./data', train=False, download=False, transform=transform_test)
-    num_classes = 10
+    outputs = 10
     inputs = 1
 
 elif (args.dataset == 'fashionmnist'):
@@ -91,7 +91,7 @@ elif (args.dataset == 'fashionmnist'):
     sys.stdout.write("| ")
     trainset = torchvision.datasets.FashionMNIST(root='./data', train=True, download=True, transform=transform_train)
     testset = torchvision.datasets.FashionMNIST(root='./data', train=False, download=False, transform=transform_test)
-    num_classes = 10
+    outputs = 10
     inputs = 3
 
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=4)
@@ -101,16 +101,16 @@ testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size, shuffle
 # Return network & file name
 def getNetwork(args):
     if (args.net_type == 'lenet'):
-        net = BBBLeNet(num_classes,inputs)
+        net = BBBLeNet(outputs,inputs)
         file_name = 'lenet'
     elif (args.net_type == 'alexnet'):
-        net = BBBAlexNet(num_classes,inputs)
+        net = BBBAlexNet(outputs,inputs)
         file_name = 'alexnet-'
     elif (args.net_type == 'squeezenet'):
-        net = BBBSqueezeNet(num_classes,inputs)
+        net = BBBSqueezeNet(outputs,inputs)
         file_name = 'squeezenet-'
     elif (args.net_type == '3Conv3FC'):
-        net = BBB3Conv3FC(num_classes,inputs)
+        net = BBB3Conv3FC(outputs,inputs)
         file_name = '3Conv3FC-'
     else:
         print('Error : Network should be either [LeNet / AlexNet /SqueezeNet/ 3Conv3FC')
@@ -149,9 +149,9 @@ def train(epoch):
     optimizer = optim.Adam(net.parameters(), lr=cf.learning_rate(args.lr, epoch), weight_decay=args.weight_decay)
 
     print('\n=> Training Epoch #%d, LR=%.4f' %(epoch, cf.learning_rate(args.lr, epoch)))
-    for batch_idx, (inputs, targets) in enumerate(trainloader):
+    for batch_idx, (inputs_value, targets) in enumerate(trainloader):
 
-        x = inputs.view(-1, inputs, 32, 32).repeat(args.num_samples, 1, 1, 1)
+        x = inputs_value.view(-1, inputs_value, 32, 32).repeat(args.num_samples, 1, 1, 1)
         y = targets.repeat(args.num_samples)
         if use_cuda:
             x, y = x.cuda(), y.cuda() # GPU settings
@@ -190,8 +190,8 @@ def test(epoch):
     correct = 0
     total = 0
     m = math.ceil(len(testset) / batch_size)
-    for batch_idx, (inputs, targets) in enumerate(testloader):
-        x = inputs.view(-1, inputs, 32, 32).repeat(args.num_samples, 1, 1, 1)
+    for batch_idx, (inputs_value, targets) in enumerate(testloader):
+        x = inputs_value.view(-1, inputs_value, 32, 32).repeat(args.num_samples, 1, 1, 1)
         y = targets.repeat(args.num_samples)
         if use_cuda:
             x, y = x.cuda(), y.cuda()
