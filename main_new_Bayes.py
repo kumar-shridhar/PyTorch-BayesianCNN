@@ -185,9 +185,9 @@ def train(epoch):
                     (len(trainset)//batch_size)+1, loss.data[0]/10, 10*correct/total))
         sys.stdout.flush()
 
-        diagnostics_to_write =  {'Epoch': epoch, 'Loss': loss.data[0]/10, 'Accuracy': 10*correct/total}
-        with open(logfile, 'a') as lf:
-            lf.write(str(diagnostics_to_write))
+    diagnostics_to_write =  {'Epoch': epoch, 'Loss': loss.data[0]/10, 'Accuracy': 10*correct/total}
+    with open(logfile, 'a') as lf:
+        lf.write(str(diagnostics_to_write))
 
 def test(epoch):
     global best_acc
