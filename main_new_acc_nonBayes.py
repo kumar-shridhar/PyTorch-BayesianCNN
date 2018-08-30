@@ -168,7 +168,7 @@ if use_cuda:
     cudnn.benchmark = True
 
 criterion = nn.CrossEntropyLoss()
-logfile = os.path.join('diagnostics_{}_{}.txt'.format(args.net_type, args.dataset))
+logfile = os.path.join('diagnostics_NonBayes{}_{}.txt'.format(args.net_type, args.dataset))
 
 # Training
 def train(epoch):
