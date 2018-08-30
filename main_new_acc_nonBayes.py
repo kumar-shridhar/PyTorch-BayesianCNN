@@ -31,7 +31,7 @@ parser.add_argument('--net_type', default='lenet', type=str, help='model')
 parser.add_argument('--depth', default=28, type=int, help='depth of model')
 parser.add_argument('--widen_factor', default=10, type=int, help='width of model')
 parser.add_argument('--dropout', default=0.3, type=float, help='dropout_rate')
-parser.add_argument('--dataset', default='cifar10', type=str, help='dataset = [mnist/cifar10/cifar100/fashionmnist]')
+parser.add_argument('--dataset', default='cifar100', type=str, help='dataset = [mnist/cifar10/cifar100/fashionmnist]')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 parser.add_argument('--testOnly', '-t', action='store_true', help='Test mode with the saved model')
 args = parser.parse_args()
@@ -88,7 +88,7 @@ elif(args.dataset == 'fashionmnist'):
     inputs = 3
 
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=4)
-testloader = torch.utils.data.DataLoader(testset, batch_size=100, shuffle=False, num_workers=4)
+testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size, shuffle=False, num_workers=4)
 
 # Return network & file name
 def getNetwork(args):
