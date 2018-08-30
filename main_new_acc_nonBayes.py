@@ -91,7 +91,7 @@ elif (args.dataset == 'stl10'):
     sys.stdout.write("| ")
     trainset = torchvision.datasets.STL10(root='./data',  split='train', download=True, transform=transform_train)
     testset = torchvision.datasets.STL10(root='./data',  split='test', download=False, transform=transform_test)
-    outputs = 10
+    num_classes = 10
     inputs = 3
 
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=4)
