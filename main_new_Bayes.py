@@ -135,6 +135,7 @@ else:
     net, file_name = getNetwork(args)
 
 if use_cuda:
+    torch.cuda.device(1)
     net.cuda()
 
 vi = GaussianVariationalInference(torch.nn.CrossEntropyLoss())
