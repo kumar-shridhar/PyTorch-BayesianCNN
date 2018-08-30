@@ -46,6 +46,7 @@ args = parser.parse_args()
 
 # Hyper Parameter settings
 use_cuda = torch.cuda.is_available()
+torch.cuda.set_device(1)
 best_acc = 0
 start_epoch, num_epochs, batch_size, optim_type = cf.start_epoch, cf.num_epochs, cf.batch_size, cf.optim_type
 
@@ -135,7 +136,6 @@ else:
     net, file_name = getNetwork(args)
 
 if use_cuda:
-    torch.cuda.device(1)
     net.cuda()
 
 vi = GaussianVariationalInference(torch.nn.CrossEntropyLoss())
