@@ -184,10 +184,10 @@ def train(epoch):
                 %(epoch, num_epochs, batch_idx+1,
                     (len(trainset)//batch_size)+1, loss.data[0]/10, 10*correct/total))
         sys.stdout.flush()
-        with open(logfile, 'w') as lf:
-            lf.write('| Epoch [%3d/%3d] Iter[%3d/%3d]\t\tLoss: %.4f Acc@1: %.3f%%'
-                %(epoch, num_epochs, batch_idx+1,
-                    (len(trainset)//batch_size)+1, loss.data[0]/10, 10*correct/total))
+
+        diagnostics_to_write =  {'Epoch': epoch, 'Loss': loss.data[0]/10, 'Accuracy': 10*correct/total}
+        with open(logfile, 'a') as lf:
+            lf.write(diagnostics_to_write)
 
 def test(epoch):
     global best_acc
@@ -223,8 +223,9 @@ def test(epoch):
     # Save checkpoint when best model
     acc = 10*correct/total
     print("\n| Validation Epoch #%d\t\t\tLoss: %.4f Acc@1: %.2f%%" %(epoch, loss.data[0]/10, acc))
-    with open(logfile, 'w') as lf:
-        lf.write("\n| Validation Epoch #%d\t\t\tLoss: %.4f Acc@1: %.2f%%" %(epoch, loss.data[0]/10, acc))
+    test_diagnostics_to_write = {'Validation Epoch':epoch, 'Loss':loss.data[0]/10, 'Accuracy': acc  }
+    with open(logfile, 'a') as lf:
+        lf.write(test_diagnostics_to_write)
 
     if acc > best_acc:
         print('| Saving Best model...\t\t\tTop1 = %.2f%%' %(acc))
