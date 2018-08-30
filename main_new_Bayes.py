@@ -46,7 +46,7 @@ args = parser.parse_args()
 
 # Hyper Parameter settings
 use_cuda = torch.cuda.is_available()
-torch.cuda.set_device(1)
+torch.cuda.set_device(0)
 best_acc = 0
 start_epoch, num_epochs, batch_size, optim_type = cf.start_epoch, cf.num_epochs, cf.batch_size, cf.optim_type
 
@@ -97,8 +97,8 @@ elif (args.dataset == 'fashionmnist'):
 elif (args.dataset == 'stl10'):
     print("| Preparing STL10 dataset...")
     sys.stdout.write("| ")
-    trainset = torchvision.datasets.STL10(root='./data', train=True, download=True, transform=transform_train)
-    testset = torchvision.datasets.STL10(root='./data', train=False, download=False, transform=transform_test)
+    trainset = torchvision.datasets.STL10(root='./data',  split='train', download=True, transform=transform_train)
+    testset = torchvision.datasets.STL10(root='./data',  split='test', download=False, transform=transform_test)
     outputs = 10
     inputs = 3
 

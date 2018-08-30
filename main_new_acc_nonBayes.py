@@ -89,8 +89,8 @@ elif(args.dataset == 'fashionmnist'):
 elif (args.dataset == 'stl10'):
     print("| Preparing STL10 dataset...")
     sys.stdout.write("| ")
-    trainset = torchvision.datasets.STL10(root='./data', train=True, download=True, transform=transform_train)
-    testset = torchvision.datasets.STL10(root='./data', train=False, download=False, transform=transform_test)
+    trainset = torchvision.datasets.STL10(root='./data',  split='train', download=True, transform=transform_train)
+    testset = torchvision.datasets.STL10(root='./data',  split='test', download=False, transform=transform_test)
     outputs = 10
     inputs = 3
 
