@@ -54,13 +54,13 @@ start_epoch, num_epochs, batch_size, optim_type = cf.start_epoch, cf.num_epochs,
 print('\n[Phase 1] : Data Preparation')
 if args.dataset is 'mnist':
     transform_train = transforms.Compose([
-        transforms.Resize(32, 32),
+        transforms.Resize((32, 32)),
         transforms.ToTensor(),
         transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
     ])  # meanstd transformation
 
     transform_test = transforms.Compose([
-        transforms.Resize(32, 32),
+        transforms.Resize((32, 32)),
         transforms.ToTensor(),
         transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
     ])
