@@ -39,7 +39,7 @@ parser.add_argument('--beta_type', default="Blundell", type=str, help='Beta type
 parser.add_argument('--p_logvar_init', default=0, type=int, help='p_logvar_init')
 parser.add_argument('--q_logvar_init', default=-10, type=int, help='q_logvar_init')
 parser.add_argument('--weight_decay', default=0.0005, type=float, help='weight_decay')
-parser.add_argument('--dataset', default='cifar10', type=str, help='dataset = [mnist/cifar10/cifar100/fashionmnist/stl10]')
+parser.add_argument('--dataset', default='mnist', type=str, help='dataset = [mnist/cifar10/cifar100/fashionmnist/stl10]')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 parser.add_argument('--testOnly', '-t', action='store_true', help='Test mode with the saved model')
 args = parser.parse_args()
@@ -52,16 +52,29 @@ start_epoch, num_epochs, batch_size, optim_type = cf.start_epoch, cf.num_epochs,
 
 # Data Uplaod
 print('\n[Phase 1] : Data Preparation')
-transform_train = transforms.Compose([
-    transforms.RandomHorizontalFlip(),
-    transforms.ToTensor(),
-    transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
-])  # meanstd transformation
+if args.dataset is 'mnist':
+    transform_train = transforms.Compose([
+        transforms.Resize((32, 32)),
+        transforms.ToTensor(),
+        transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
+    ])  # meanstd transformation
 
-transform_test = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
-])
+    transform_test = transforms.Compose([
+        transforms.Resize((32, 32)),
+        transforms.ToTensor(),
+        transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
+    ])
+else:
+    transform_train = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
+    ])  # meanstd transformation
+
+    transform_test = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
+    ])
+
 
 if (args.dataset == 'cifar10'):
     print("| Preparing CIFAR-10 dataset...")
@@ -93,7 +106,7 @@ elif (args.dataset == 'fashionmnist'):
     trainset = torchvision.datasets.FashionMNIST(root='./data', train=True, download=True, transform=transform_train)
     testset = torchvision.datasets.FashionMNIST(root='./data', train=False, download=False, transform=transform_test)
     outputs = 10
-    inputs = 3
+    inputs = 1
 elif (args.dataset == 'stl10'):
     print("| Preparing STL10 dataset...")
     sys.stdout.write("| ")

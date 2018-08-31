@@ -32,7 +32,7 @@ parser.add_argument('--net_type', default='3conv3fc', type=str, help='model')
 parser.add_argument('--depth', default=28, type=int, help='depth of model')
 parser.add_argument('--widen_factor', default=10, type=int, help='width of model')
 parser.add_argument('--dropout', default=0.3, type=float, help='dropout_rate')
-parser.add_argument('--dataset', default='cifar10', type=str, help='dataset = [mnist/cifar10/cifar100/fashionmnist/stl10]')
+parser.add_argument('--dataset', default='mnist', type=str, help='dataset = [mnist/cifar10/cifar100/fashionmnist/stl10]')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 parser.add_argument('--testOnly', '-t', action='store_true', help='Test mode with the saved model')
 args = parser.parse_args()
@@ -44,18 +44,28 @@ start_epoch, num_epochs, batch_size, optim_type = cf.start_epoch, cf.num_epochs,
 
 # Data Uplaod
 print('\n[Phase 1] : Data Preparation')
-transform_train = transforms.Compose([
-    transforms.RandomCrop(32, padding=4),
-    transforms.RandomHorizontalFlip(),
-    transforms.ToTensor(),
-    transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
-]) # meanstd transformation
+if args.dataset is 'mnist':
+    transform_train = transforms.Compose([
+        transforms.Resize((32, 32)),
+        transforms.ToTensor(),
+        transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
+    ])  # meanstd transformation
 
-transform_test = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
-])
+    transform_test = transforms.Compose([
+        transforms.Resize((32, 32)),
+        transforms.ToTensor(),
+        transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
+    ])
+else:
+    transform_train = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
+    ])  # meanstd transformation
 
+    transform_test = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
+    ])
 if(args.dataset == 'cifar10'):
     print("| Preparing CIFAR-10 dataset...")
     sys.stdout.write("| ")
@@ -86,7 +96,7 @@ elif(args.dataset == 'fashionmnist'):
     trainset = torchvision.datasets.FashionMNIST(root='./data', train=True, download=True, transform=transform_train)
     testset = torchvision.datasets.FashionMNIST(root='./data', train=False, download=False, transform=transform_test)
     num_classes = 10
-    inputs = 3
+    inputs = 1
 elif (args.dataset == 'stl10'):
     print("| Preparing STL10 dataset...")
     sys.stdout.write("| ")
@@ -187,15 +197,15 @@ def train(epoch):
     train_loss = 0
     correct = 0
     total = 0
-    optimizer = optim.Adam(net.parameters(), lr=cf.learning_rate(args.lr, epoch), weight_decay=5e-4)
+    optimizer = optim.Adam(net.parameters(), lr=args.lr, weight_decay=5e-4)
 
     print('\n=> Training Epoch #%d, LR=%.4f' %(epoch, cf.learning_rate(args.lr, epoch)))
-    for batch_idx, (inputs, targets) in enumerate(trainloader):
+    for batch_idx, (inputs_value, targets) in enumerate(trainloader):
         if use_cuda:
-            inputs, targets = inputs.cuda(), targets.cuda() # GPU settings
+            inputs_value, targets = inputs_value.cuda(), targets.cuda() # GPU settings
         optimizer.zero_grad()
-        inputs, targets = Variable(inputs), Variable(targets)
-        outputs = net(inputs)               # Forward Propagation
+        inputs_value, targets = Variable(inputs_value), Variable(targets)
+        outputs = net(inputs_value)               # Forward Propagation
         loss = criterion(outputs, targets)  # Loss
         loss.backward()  # Backward Propagation
         optimizer.step() # Optimizer update
@@ -220,12 +230,12 @@ def test(epoch):
     test_loss = 0
     correct = 0
     total = 0
-    for batch_idx, (inputs, targets) in enumerate(testloader):
+    for batch_idx, (inputs_value, targets) in enumerate(testloader):
         if use_cuda:
-            inputs, targets = inputs.cuda(), targets.cuda()
+            inputs_value, targets = inputs_value.cuda(), targets.cuda()
         with torch.no_grad():
-            inputs, targets = Variable(inputs), Variable(targets)
-        outputs = net(inputs)
+            inputs_value, targets = Variable(inputs_value), Variable(targets)
+        outputs = net(inputs_value)
         loss = criterion(outputs, targets)
 
         test_loss += loss.data[0]
