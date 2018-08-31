@@ -28,7 +28,7 @@ from utils.NonBayesianModels.ThreeConvThreeFC import ThreeConvThreeFC
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR-10 Training')
 parser.add_argument('--lr', default=0.001, type=float, help='learning_rate')
-parser.add_argument('--net_type', default='lenet', type=str, help='model')
+parser.add_argument('--net_type', default='3conv3fc', type=str, help='model')
 parser.add_argument('--depth', default=28, type=int, help='depth of model')
 parser.add_argument('--widen_factor', default=10, type=int, help='width of model')
 parser.add_argument('--dropout', default=0.3, type=float, help='dropout_rate')
@@ -44,17 +44,28 @@ start_epoch, num_epochs, batch_size, optim_type = cf.start_epoch, cf.num_epochs,
 
 # Data Uplaod
 print('\n[Phase 1] : Data Preparation')
-transform_train = transforms.Compose([
-    transforms.RandomCrop(32, padding=4),
-    transforms.ToTensor(),
-    transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
-]) # meanstd transformation
+if args.dataset is 'mnist':
+    transform_train = transforms.Compose([
+        transforms.Resize((32, 32)),
+        transforms.ToTensor(),
+        transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
+    ])  # meanstd transformation
 
-transform_test = transforms.Compose([
-    transforms.ToTensor(),
-    transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
-])
+    transform_test = transforms.Compose([
+        transforms.Resize((32, 32)),
+        transforms.ToTensor(),
+        transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
+    ])
+else:
+    transform_train = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
+    ])  # meanstd transformation
 
+    transform_test = transforms.Compose([
+        transforms.ToTensor(),
+        transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
+    ])
 if(args.dataset == 'cifar10'):
     print("| Preparing CIFAR-10 dataset...")
     sys.stdout.write("| ")
