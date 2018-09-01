@@ -48,32 +48,23 @@ args = parser.parse_args()
 use_cuda = torch.cuda.is_available()
 torch.cuda.set_device(0)
 best_acc = 0
+resize=32
 start_epoch, num_epochs, batch_size, optim_type = cf.start_epoch, cf.num_epochs, cf.batch_size, cf.optim_type
 
 # Data Uplaod
 print('\n[Phase 1] : Data Preparation')
-if args.dataset is 'mnist':
-    transform_train = transforms.Compose([
-        transforms.Resize((32, 32)),
-        transforms.ToTensor(),
-        transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
-    ])  # meanstd transformation
 
-    transform_test = transforms.Compose([
-        transforms.Resize((32, 32)),
-        transforms.ToTensor(),
-        transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
-    ])
-else:
-    transform_train = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
-    ])  # meanstd transformation
+transform_train = transforms.Compose([
+    transforms.Resize((resize, resize)),
+    transforms.ToTensor(),
+    transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
+])  # meanstd transformation
 
-    transform_test = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
-    ])
+transform_test = transforms.Compose([
+    transforms.Resize((resize, resize)),
+    transforms.ToTensor(),
+    transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
+])
 
 
 if (args.dataset == 'cifar10'):
@@ -174,7 +165,7 @@ def train(epoch):
     print('\n=> Training Epoch #%d, LR=%.4f' %(epoch, cf.learning_rate(args.lr, epoch)))
     for batch_idx, (inputs_value, targets) in enumerate(trainloader):
 
-        x = inputs_value.view(-1, inputs, 32, 32).repeat(args.num_samples, 1, 1, 1)
+        x = inputs_value.view(-1, inputs, resize, resize).repeat(args.num_samples, 1, 1, 1)
         y = targets.repeat(args.num_samples)
         if use_cuda:
             x, y = x.cuda(), y.cuda() # GPU settings
@@ -218,7 +209,7 @@ def test(epoch):
     total = 0
     m = math.ceil(len(testset) / batch_size)
     for batch_idx, (inputs_value, targets) in enumerate(testloader):
-        x = inputs_value.view(-1, inputs, 32, 32).repeat(args.num_samples, 1, 1, 1)
+        x = inputs_value.view(-1, inputs, resize, resize).repeat(args.num_samples, 1, 1, 1)
         y = targets.repeat(args.num_samples)
         if use_cuda:
             x, y = x.cuda(), y.cuda()

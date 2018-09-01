@@ -40,32 +40,24 @@ args = parser.parse_args()
 # Hyper Parameter settings
 use_cuda = torch.cuda.is_available()
 best_acc = 0
+resize=32
 start_epoch, num_epochs, batch_size, optim_type = cf.start_epoch, cf.num_epochs, cf.batch_size, cf.optim_type
 
 # Data Uplaod
 print('\n[Phase 1] : Data Preparation')
-if args.dataset is 'mnist':
-    transform_train = transforms.Compose([
-        transforms.Resize((32, 32)),
-        transforms.ToTensor(),
-        transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
-    ])  # meanstd transformation
 
-    transform_test = transforms.Compose([
-        transforms.Resize((32, 32)),
-        transforms.ToTensor(),
-        transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
-    ])
-else:
-    transform_train = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
-    ])  # meanstd transformation
+transform_train = transforms.Compose([
+    transforms.Resize((resize, resize)),
+    transforms.ToTensor(),
+    transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
+])  # meanstd transformation
 
-    transform_test = transforms.Compose([
-        transforms.ToTensor(),
-        transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
-    ])
+transform_test = transforms.Compose([
+    transforms.Resize((resize, resize)),
+    transforms.ToTensor(),
+    transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
+])
+
 if(args.dataset == 'cifar10'):
     print("| Preparing CIFAR-10 dataset...")
     sys.stdout.write("| ")
