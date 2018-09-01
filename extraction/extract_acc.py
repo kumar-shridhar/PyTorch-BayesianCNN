@@ -11,7 +11,7 @@ plt.rcParams.update({'xtick.labelsize': 32, 'ytick.labelsize': 32, 'axes.labelsi
 # change for given number of tasks
 os.chdir("../results/")
 
-with open("3Conv3FC/diagnostics_NonBayes3conv3fc_cifar10.txt", 'r') as file:
+with open("3conv3fc/diagnostics_NonBayes3conv3fc_cifar10.txt", 'r') as file:
     acc = re.findall(r"'Accuracy':\s+tensor\((.*?)\)", file.read())
 print(acc)
 
@@ -21,7 +21,7 @@ valid_1 = acc[1::2]
 train_1 = np.array(train_1).astype(np.float32)
 valid_1 = np.array(valid_1).astype(np.float32)
 
-with open("3Conv3FC/diagnostics_NonBayes3conv3fc_cifar100.txt", 'r') as file:
+with open("3conv3fc/diagnostics_NonBayes3conv3fc_cifar100.txt", 'r') as file:
     acc = re.findall(r"'Accuracy':\s+tensor\((.*?)\)", file.read())
 print(acc)
 
@@ -31,7 +31,7 @@ valid_2 = acc[1::2]
 train_2 = np.array(train_2).astype(np.float32)
 valid_2 = np.array(valid_2).astype(np.float32)
 
-with open("3Conv3FC/diagnostics_NonBayes3conv3fc_mnist.txt", 'r') as file:
+with open("3conv3fc/diagnostics_NonBayes3conv3fc_mnist.txt", 'r') as file:
     acc = re.findall(r"'Accuracy':\s+tensor\((.*?)\)", file.read())
 print(acc)
 
@@ -41,7 +41,7 @@ valid_3 = acc[1::2]
 train_3 = np.array(train_3).astype(np.float32)
 valid_3 = np.array(valid_3).astype(np.float32)
 
-with open("3Conv3FC/diagnostics_NonBayes3conv3fc_stl10.txt", 'r') as file:
+with open("3conv3fc/diagnostics_NonBayes3conv3fc_stl10.txt", 'r') as file:
     acc = re.findall(r"'Accuracy':\s+tensor\((.*?)\)", file.read())
 print(acc)
 
@@ -51,7 +51,7 @@ valid_4 = acc[1::2]
 train_4 = np.array(train_4).astype(np.float32)
 valid_4 = np.array(valid_4).astype(np.float32)
 
-with open("3Conv3FC/diagnostics_Bayes3conv3fc_cifar10.txt", 'r') as file:
+with open("3conv3fc/diagnostics_Bayes3conv3fc_cifar10.txt", 'r') as file:
     acc = re.findall(r"'Accuracy':\s+tensor\((.*?)\)", file.read())
 print(acc)
 
@@ -61,7 +61,7 @@ valid_5 = acc[1::2]
 train_5 = np.array(train_5).astype(np.float32)
 valid_5 = np.array(valid_5).astype(np.float32)
 
-with open("3Conv3FC/diagnostics_Bayes3conv3fc_cifar100.txt", 'r') as file:
+with open("3conv3fc/diagnostics_Bayes3conv3fc_cifar100.txt", 'r') as file:
     acc = re.findall(r"'Accuracy':\s+tensor\((.*?)\)", file.read())
 print(acc)
 
@@ -72,7 +72,7 @@ valid_6 = acc[1::2]
 train_6 = np.array(train_6).astype(np.float32)
 valid_6 = np.array(valid_6).astype(np.float32)
 
-with open("3Conv3FC/diagnostics_Bayes3conv3fc_mnist.txt", 'r') as file:
+with open("3conv3fc/diagnostics_Bayes3conv3fc_mnist.txt", 'r') as file:
     acc = re.findall(r"'Accuracy':\s+tensor\((.*?)\)", file.read())
 print(acc)
 
@@ -82,7 +82,7 @@ valid_7 = acc[1::2]
 train_7 = np.array(train_7).astype(np.float32)
 valid_7 = np.array(valid_7).astype(np.float32)
 
-with open("3Conv3FC/diagnostics_Bayes3conv3fc_stl10.txt", 'r') as file:
+with open("3conv3fc/diagnostics_Bayes3conv3fc_stl10.txt", 'r') as file:
     acc = re.findall(r"'Accuracy':\s+tensor\((.*?)\)", file.read())
 print(acc)
 
@@ -116,7 +116,7 @@ y_ticks = range(len(valid_1))
 plt.xticks(x_ticks[9::10], map(lambda x: x+1, x_ticks[9::10]))
 plt.yticks(y_ticks[9::10], map(lambda y: y+1, y_ticks[9::10]))
 
-plt.legend(fontsize=28)
+plt.legend(fontsize=16)
 
 plt.savefig("results_3conv3fc.png")
 
