@@ -11,7 +11,7 @@ plt.rcParams.update({'xtick.labelsize': 32, 'ytick.labelsize': 32, 'axes.labelsi
 # change for given number of tasks
 os.chdir("../results/")
 
-with open("diagnostics_NonBayeslenet_cifar10.txt", 'r') as file:
+with open("diagnostics_NonBayes3Conv3FC_cifar10.txt", 'r') as file:
     acc = re.findall(r"'Accuracy':\s+tensor\((.*?)\)", file.read())
 print(acc)
 
@@ -21,7 +21,7 @@ valid_1 = acc[1::2]
 train_1 = np.array(train_1).astype(np.float32)
 valid_1 = np.array(valid_1).astype(np.float32)
 
-with open("diagnostics_NonBayeslenet_cifar100.txt", 'r') as file:
+with open("diagnostics_NonBayes3Conv3FC_cifar100.txt", 'r') as file:
     acc = re.findall(r"'Accuracy':\s+tensor\((.*?)\)", file.read())
 print(acc)
 
@@ -31,7 +31,7 @@ valid_2 = acc[1::2]
 train_2 = np.array(train_2).astype(np.float32)
 valid_2 = np.array(valid_2).astype(np.float32)
 
-with open("diagnostics_Bayeslenet_cifar10.txt", 'r') as file:
+with open("diagnostics_Bayes3Conv3FC_cifar10.txt", 'r') as file:
     acc = re.findall(r"'Accuracy':\s+tensor\((.*?)\)", file.read())
 print(acc)
 
@@ -41,7 +41,7 @@ valid_3 = acc[1::2]
 train_3 = np.array(train_3).astype(np.float32)
 valid_3 = np.array(valid_3).astype(np.float32)
 
-with open("diagnostics_Bayeslenet_cifar100.txt", 'r') as file:
+with open("diagnostics_Bayes3Conv3FC_cifar100.txt", 'r') as file:
     acc = re.findall(r"'Accuracy':\s+tensor\((.*?)\)", file.read())
 print(acc)
 
