@@ -3,7 +3,7 @@ import math
 
 start_epoch = 1
 num_epochs = 100
-batch_size = 128
+batch_size = 256
 optim_type = 'Adam'
 
 mean = {

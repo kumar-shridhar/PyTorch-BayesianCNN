@@ -26,8 +26,8 @@ class BBBAlexNet(nn.Module):
         self.soft5 = nn.Softplus()
         self.pool3 = nn.MaxPool2d(kernel_size=2, stride=2)
 
-        self.flatten = FlattenLayer(16 * 16 * 1280)
-        self.fc1 = BBBLinearFactorial(16 * 16 * 1280, outputs)
+        self.flatten = FlattenLayer(1 * 1 * 128)
+        self.fc1 = BBBLinearFactorial(1* 1 * 128, outputs)
 
 
         layers = [self.conv1, self.soft1, self.pool1, self.conv2, self.soft2, self.pool2, self.conv3, self.soft3,
