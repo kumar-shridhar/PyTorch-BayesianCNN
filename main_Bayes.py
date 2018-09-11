@@ -30,15 +30,15 @@ from utils.BayesianModels.BayesianSqueezeNet import BBBSqueezeNet
 
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR-10 Training')
-parser.add_argument('--lr', default=0.001, type=float, help='learning_rate')
+#parser.add_argument('--lr', default=0.001, type=float, help='learning_rate')
 parser.add_argument('--net_type', default='alexnet', type=str, help='model')
 #parser.add_argument('--depth', default=28, type=int, help='depth of model')
 #parser.add_argument('--widen_factor', default=10, type=int, help='width of model')
-parser.add_argument('--num_samples', default=10, type=int, help='Number of samples')
-parser.add_argument('--beta_type', default="Blundell", type=str, help='Beta type')
-parser.add_argument('--p_logvar_init', default=0, type=int, help='p_logvar_init')
-parser.add_argument('--q_logvar_init', default=-10, type=int, help='q_logvar_init')
-parser.add_argument('--weight_decay', default=0.0005, type=float, help='weight_decay')
+#parser.add_argument('--num_samples', default=10, type=int, help='Number of samples')
+#parser.add_argument('--beta_type', default="Blundell", type=str, help='Beta type')
+#parser.add_argument('--p_logvar_init', default=0, type=int, help='p_logvar_init')
+#parser.add_argument('--q_logvar_init', default=-10, type=int, help='q_logvar_init')
+#parser.add_argument('--weight_decay', default=0.0005, type=float, help='weight_decay')
 parser.add_argument('--dataset', default='cifar100', type=str, help='dataset = [mnist/cifar10/cifar100/fashionmnist/stl10]')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 parser.add_argument('--testOnly', '-t', action='store_true', help='Test mode with the saved model')
@@ -49,7 +49,6 @@ use_cuda = torch.cuda.is_available()
 torch.cuda.set_device(0)
 best_acc = 0
 resize=32
-start_epoch, num_epochs, batch_size, optim_type = cf.start_epoch, cf.num_epochs, cf.batch_size, cf.optim_type
 
 # Data Uplaod
 print('\n[Phase 1] : Data Preparation')
@@ -106,8 +105,8 @@ elif (args.dataset == 'stl10'):
     outputs = 10
     inputs = 3
 
-trainloader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, shuffle=True, num_workers=4)
-testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size, shuffle=False, num_workers=4)
+trainloader = torch.utils.data.DataLoader(trainset, batch_size=cf.batch_size, shuffle=True, num_workers=4)
+testloader = torch.utils.data.DataLoader(testset, batch_size=cf.batch_size, shuffle=False, num_workers=4)
 
 
 # Return network & file name
@@ -141,7 +140,7 @@ if args.resume:
     checkpoint = torch.load('./checkpoint/'+args.dataset+os.sep+file_name+'.t7')
     net = checkpoint['net']
     best_acc = checkpoint['acc']
-    start_epoch = checkpoint['epoch']
+    cf.start_epoch = checkpoint['epoch']
 else:
     print('| Building net type [' + args.net_type + ']...')
     net, file_name = getNetwork(args)
@@ -159,22 +158,22 @@ def train(epoch):
     train_loss = 0
     correct = 0
     total = 0
-    m = math.ceil(len(trainset) / batch_size)
-    optimizer = optim.Adam(net.parameters(), lr=cf.learning_rate(args.lr, epoch), weight_decay=args.weight_decay)
+    m = math.ceil(len(trainset) / cf.batch_size)
+    optimizer = optim.Adam(net.parameters(), lr=cf.learning_rate(cf.lr, epoch), weight_decay=cf.weight_decay)
 
-    print('\n=> Training Epoch #%d, LR=%.4f' %(epoch, cf.learning_rate(args.lr, epoch)))
+    print('\n=> Training Epoch #%d, LR=%.4f' %(epoch, cf.learning_rate(cf.lr, epoch)))
     for batch_idx, (inputs_value, targets) in enumerate(trainloader):
 
-        x = inputs_value.view(-1, inputs, resize, resize).repeat(args.num_samples, 1, 1, 1)
-        y = targets.repeat(args.num_samples)
+        x = inputs_value.view(-1, inputs, resize, resize).repeat(cf.num_samples, 1, 1, 1)
+        y = targets.repeat(cf.num_samples)
         if use_cuda:
             x, y = x.cuda(), y.cuda() # GPU settings
 
-        if args.beta_type is "Blundell":
+        if cf.beta_type is "Blundell":
             beta = 2 ** (m - (batch_idx + 1)) / (2 ** m - 1)
-        elif args.beta_type is "Soenderby":
-            beta = min(epoch / (num_epochs // 4), 1)
-        elif args.beta_type is "Standard":
+        elif cf.beta_type is "Soenderby":
+            beta = min(epoch / (cf.num_epochs // 4), 1)
+        elif cf.beta_type is "Standard":
             beta = 1 / m
         else:
             beta = 0
@@ -193,11 +192,11 @@ def train(epoch):
 
         sys.stdout.write('\r')
         sys.stdout.write('| Epoch [%3d/%3d] Iter[%3d/%3d]\t\tLoss: %.4f Acc@1: %.3f%%'
-                %(epoch, num_epochs, batch_idx+1,
-                    (len(trainset)//batch_size)+1, loss.data[0], (100*correct/total)/args.num_samples))
+                %(epoch, cf.num_epochs, batch_idx+1,
+                    (len(trainset)//cf.batch_size)+1, loss.data[0], (100*correct/total)/cf.num_samples))
         sys.stdout.flush()
 
-    diagnostics_to_write =  {'Epoch': epoch, 'Loss': loss.data[0], 'Accuracy': (100*correct/total)/args.num_samples}
+    diagnostics_to_write =  {'Epoch': epoch, 'Loss': loss.data[0], 'Accuracy': (100*correct/total)/cf.num_samples}
     with open(logfile, 'a') as lf:
         lf.write(str(diagnostics_to_write))
 
@@ -207,21 +206,21 @@ def test(epoch):
     test_loss = 0
     correct = 0
     total = 0
-    m = math.ceil(len(testset) / batch_size)
+    m = math.ceil(len(testset) / cf.batch_size)
     for batch_idx, (inputs_value, targets) in enumerate(testloader):
-        x = inputs_value.view(-1, inputs, resize, resize).repeat(args.num_samples, 1, 1, 1)
-        y = targets.repeat(args.num_samples)
+        x = inputs_value.view(-1, inputs, resize, resize).repeat(cf.num_samples, 1, 1, 1)
+        y = targets.repeat(cf.num_samples)
         if use_cuda:
             x, y = x.cuda(), y.cuda()
         with torch.no_grad():
             x, y = Variable(x), Variable(y)
         outputs, kl = net.probforward(x)
 
-        if args.beta_type is "Blundell":
+        if cf.beta_type is "Blundell":
             beta = 2 ** (m - (batch_idx + 1)) / (2 ** m - 1)
-        elif args.beta_type is "Soenderby":
-            beta = min(epoch / (num_epochs // 4), 1)
-        elif args.beta_type is "Standard":
+        elif cf.beta_type is "Soenderby":
+            beta = min(epoch / (cf.num_epochs // 4), 1)
+        elif cf.beta_type is "Standard":
             beta = 1 / m
         else:
             beta = 0
@@ -234,7 +233,7 @@ def test(epoch):
         correct += predicted.eq(y.data).cpu().sum()
 
     # Save checkpoint when best model
-    acc =(100*correct/total)/args.num_samples
+    acc =(100*correct/total)/cf.num_samples
     print("\n| Validation Epoch #%d\t\t\tLoss: %.4f Acc@1: %.2f%%" %(epoch, loss.data[0], acc))
     test_diagnostics_to_write = {'Validation Epoch':epoch, 'Loss':loss.data[0], 'Accuracy': acc}
     with open(logfile, 'a') as lf:
@@ -256,12 +255,12 @@ def test(epoch):
         best_acc = acc
 
 print('\n[Phase 3] : Training model')
-print('| Training Epochs = ' + str(num_epochs))
-print('| Initial Learning Rate = ' + str(args.lr))
-print('| Optimizer = ' + str(optim_type))
+print('| Training Epochs = ' + str(cf.num_epochs))
+print('| Initial Learning Rate = ' + str(cf.lr))
+print('| Optimizer = ' + str(cf.optim_type))
 
 elapsed_time = 0
-for epoch in range(start_epoch, start_epoch+num_epochs):
+for epoch in range(cf.start_epoch, cf.start_epoch+cf.num_epochs):
     start_time = time.time()
 
     train(epoch)
