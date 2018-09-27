@@ -15,7 +15,7 @@ Implementation of [Bayes by Backprop](https://arxiv.org/abs/1505.05424) in a con
 
 ![Results MNIST, CIFAR-10 and CIFAR-100 with 3Conv3FC](figures/results_CNN.png)
 
-Please cite:
+If you are using this work, please cite the authors:
 ```
 @ARTICLE{2018arXiv180605978S,
    author = {{Shridhar}, K. and {Laumann}, F. and {Llopart Maurin}, A. and 
