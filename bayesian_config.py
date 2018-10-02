@@ -7,7 +7,7 @@ batch_size = 256
 optim_type = 'Adam'
 lr = 0.001
 weight_decay = 0.0005
-num_samples = 10
+num_samples = 100
 beta_type = "Blundell"
 
 
