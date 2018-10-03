@@ -226,7 +226,7 @@ class BBBLinearFactorial(nn.Module):
 
         # sample from output
         if cuda:
-            output = fc_qw_mean + fc_qw_si * (torch.randn(fc_qw_mean.size())).cuda()
+            output = (fc_qw_mean + fc_qw_si * (torch.randn(fc_qw_mean.size()))).cuda()
         else:
             output = fc_qw_mean + fc_qw_si * (torch.randn(fc_qw_mean.size()))
 
