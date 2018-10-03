@@ -230,9 +230,6 @@ class BBBLinearFactorial(nn.Module):
         else:
             output = fc_qw_mean + fc_qw_si * (torch.randn(fc_qw_mean.size()))
 
-        if cuda:
-            output.cuda()
-
         w_sample = self.fc_qw.sample()
 
         # KL divergence
