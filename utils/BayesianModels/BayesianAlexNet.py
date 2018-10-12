@@ -49,5 +49,4 @@ class BBBAlexNet(nn.Module):
             else:
                 x = layer(x)
         logits = x
-        print('logits', logits)
         return logits, kl
