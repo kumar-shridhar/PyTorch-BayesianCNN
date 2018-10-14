@@ -3,7 +3,6 @@ from __future__ import print_function
 import torch
 import torch.nn as nn
 import torch.optim as optim
-import torch.nn.functional as F
 import torch.backends.cudnn as cudnn
 import config as cf
 
@@ -14,7 +13,6 @@ import os
 import sys
 import time
 import argparse
-import datetime
 
 from torch.autograd import Variable
 
@@ -25,6 +23,7 @@ from utils.NonBayesianModels.LeNet import LeNet
 from utils.NonBayesianModels.SqueezeNet import SqueezeNet
 from utils.NonBayesianModels.wide_resnet import Wide_ResNet
 from utils.NonBayesianModels.ThreeConvThreeFC import ThreeConvThreeFC
+from utils.autoaugment import CIFAR10Policy
 
 parser = argparse.ArgumentParser(description='PyTorch CIFAR-10 Training')
 parser.add_argument('--lr', default=0.001, type=float, help='learning_rate')
@@ -32,7 +31,7 @@ parser.add_argument('--net_type', default='alexnet', type=str, help='model')
 parser.add_argument('--depth', default=28, type=int, help='depth of model')
 parser.add_argument('--widen_factor', default=10, type=int, help='width of model')
 parser.add_argument('--dropout', default=0.3, type=float, help='dropout_rate')
-parser.add_argument('--dataset', default='cifar10', type=str, help='dataset = [mnist/cifar10/cifar100/fashionmnist/stl10]')
+parser.add_argument('--dataset', default='stl10', type=str, help='dataset = [mnist/cifar10/cifar100/fashionmnist/stl10]')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 parser.add_argument('--testOnly', '-t', action='store_true', help='Test mode with the saved model')
 args = parser.parse_args()
@@ -48,12 +47,18 @@ print('\n[Phase 1] : Data Preparation')
 
 transform_train = transforms.Compose([
     transforms.Resize((resize, resize)),
+    transforms.RandomCrop(32, padding=4),
+    #transforms.RandomHorizontalFlip(),
+    #CIFAR10Policy(),
     transforms.ToTensor(),
     transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
 ])  # meanstd transformation
 
 transform_test = transforms.Compose([
     transforms.Resize((resize, resize)),
+    transforms.RandomCrop(32, padding=4),
+    #transforms.RandomHorizontalFlip(),
+    #CIFAR10Policy(),
     transforms.ToTensor(),
     transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
 ])

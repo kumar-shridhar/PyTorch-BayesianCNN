@@ -11,6 +11,7 @@ import pickle
 
 import torchvision
 import torchvision.transforms as transforms
+from utils.autoaugment import CIFAR10Policy
 
 import torch
 import torch.utils.data as data
@@ -31,7 +32,7 @@ from utils.BayesianModels.BayesianSqueezeNet import BBBSqueezeNet
 
 parser = argparse.ArgumentParser(description='PyTorch Bayesian Model Training')
 #parser.add_argument('--lr', default=0.001, type=float, help='learning_rate')
-parser.add_argument('--net_type', default='lenet', type=str, help='model')
+parser.add_argument('--net_type', default='alexnet', type=str, help='model')
 #parser.add_argument('--depth', default=28, type=int, help='depth of model')
 #parser.add_argument('--widen_factor', default=10, type=int, help='width of model')
 #parser.add_argument('--num_samples', default=10, type=int, help='Number of samples')
@@ -39,14 +40,14 @@ parser.add_argument('--net_type', default='lenet', type=str, help='model')
 #parser.add_argument('--p_logvar_init', default=0, type=int, help='p_logvar_init')
 #parser.add_argument('--q_logvar_init', default=-10, type=int, help='q_logvar_init')
 #parser.add_argument('--weight_decay', default=0.0005, type=float, help='weight_decay')
-parser.add_argument('--dataset', default='cifar10', type=str, help='dataset = [mnist/cifar10/cifar100/fashionmnist/stl10]')
+parser.add_argument('--dataset', default='stl10', type=str, help='dataset = [mnist/cifar10/cifar100/fashionmnist/stl10]')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 parser.add_argument('--testOnly', '-t', action='store_true', help='Test mode with the saved model')
 args = parser.parse_args()
 
 # Hyper Parameter settings
 use_cuda = torch.cuda.is_available()
-torch.cuda.set_device(0)
+torch.cuda.set_device(1)
 best_acc = 0
 resize=32
 
@@ -56,7 +57,8 @@ print('\n[Phase 1] : Data Preparation')
 transform_train = transforms.Compose([
     transforms.Resize((resize, resize)),
     transforms.RandomCrop(32, padding=4),
-    transforms.RandomHorizontalFlip(),
+    #transforms.RandomHorizontalFlip(),
+    #CIFAR10Policy(),
     transforms.ToTensor(),
     transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
 ])  # meanstd transformation
@@ -64,7 +66,8 @@ transform_train = transforms.Compose([
 transform_test = transforms.Compose([
     transforms.Resize((resize, resize)),
     transforms.RandomCrop(32, padding=4),
-    transforms.RandomHorizontalFlip(),
+    #transforms.RandomHorizontalFlip(),
+    #CIFAR10Policy(),
     transforms.ToTensor(),
     transforms.Normalize(cf.mean[args.dataset], cf.std[args.dataset]),
 ])
@@ -141,7 +144,7 @@ if args.resume:
     print('| Resuming from checkpoint...')
     assert os.path.isdir('checkpoint'), 'Error: No checkpoint directory found!'
     _, file_name = getNetwork(args)
-    checkpoint = torch.load('./checkpoint/'+args.dataset+os.sep+file_name+'.t7')
+    checkpoint = torch.load('./checkpoint/'+args.dataset+os.sep+file_name+str(cf.num_samples)+'.t7')
     net = checkpoint['net']
     best_acc = checkpoint['acc']
     cf.start_epoch = checkpoint['epoch']
@@ -154,7 +157,7 @@ if use_cuda:
 
 vi = GaussianVariationalInference(torch.nn.CrossEntropyLoss())
 
-logfile = os.path.join('diagnostics_Bayes{}_{}.txt'.format(args.net_type, args.dataset))
+logfile = os.path.join('diagnostics_Bayes{}_{}_{}.txt'.format(args.net_type, args.dataset, cf.num_samples))
 
 # Training
 def train(epoch):
@@ -255,7 +258,7 @@ def test(epoch):
         save_point = './checkpoint/'+args.dataset+os.sep
         if not os.path.isdir(save_point):
             os.mkdir(save_point)
-        torch.save(state, save_point+file_name+'.t7')
+        torch.save(state, save_point+file_name+str(cf.num_samples)+'.t7')
         best_acc = acc
 
 print('\n[Phase 3] : Training model')
