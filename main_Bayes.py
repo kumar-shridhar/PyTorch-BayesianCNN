@@ -15,6 +15,7 @@ from utils.autoaugment import CIFAR10Policy
 
 import torch
 import torch.utils.data as data
+import numpy as np
 import torch.nn as nn
 import torch.optim as optim
 import torch.nn.functional as F
@@ -32,7 +33,7 @@ from utils.BayesianModels.BayesianSqueezeNet import BBBSqueezeNet
 
 parser = argparse.ArgumentParser(description='PyTorch Bayesian Model Training')
 #parser.add_argument('--lr', default=0.001, type=float, help='learning_rate')
-parser.add_argument('--net_type', default='alexnet', type=str, help='model')
+parser.add_argument('--net_type', default='lenet', type=str, help='model')
 #parser.add_argument('--depth', default=28, type=int, help='depth of model')
 #parser.add_argument('--widen_factor', default=10, type=int, help='width of model')
 #parser.add_argument('--num_samples', default=10, type=int, help='Number of samples')
@@ -40,14 +41,14 @@ parser.add_argument('--net_type', default='alexnet', type=str, help='model')
 #parser.add_argument('--p_logvar_init', default=0, type=int, help='p_logvar_init')
 #parser.add_argument('--q_logvar_init', default=-10, type=int, help='q_logvar_init')
 #parser.add_argument('--weight_decay', default=0.0005, type=float, help='weight_decay')
-parser.add_argument('--dataset', default='stl10', type=str, help='dataset = [mnist/cifar10/cifar100/fashionmnist/stl10]')
+parser.add_argument('--dataset', default='cifar10', type=str, help='dataset = [mnist/cifar10/cifar100/fashionmnist/stl10]')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 parser.add_argument('--testOnly', '-t', action='store_true', help='Test mode with the saved model')
 args = parser.parse_args()
 
 # Hyper Parameter settings
 use_cuda = torch.cuda.is_available()
-torch.cuda.set_device(1)
+torch.cuda.set_device(0)
 best_acc = 0
 resize=32
 
@@ -158,6 +159,7 @@ if use_cuda:
 vi = GaussianVariationalInference(torch.nn.CrossEntropyLoss())
 
 logfile = os.path.join('diagnostics_Bayes{}_{}_{}.txt'.format(args.net_type, args.dataset, cf.num_samples))
+#value_file = os.path.join("values{}_{}.txt".format(args.net_type, args.dataset))
 
 # Training
 def train(epoch):
@@ -213,6 +215,7 @@ def test(epoch):
     test_loss = 0
     correct = 0
     total = 0
+    conf=[]
     m = math.ceil(len(testset) / cf.batch_size)
     for batch_idx, (inputs_value, targets) in enumerate(testloader):
         x = inputs_value.view(-1, inputs, resize, resize).repeat(cf.num_samples, 1, 1, 1)
@@ -236,15 +239,43 @@ def test(epoch):
 
         test_loss += loss.data[0]
         _, predicted = torch.max(outputs.data, 1)
+        preds = F.softmax(outputs, dim=1)
+        #print(preds)
+        results = torch.topk(preds.cpu().data, k=1, dim=1)
+        #print(results[0][0].item())
+        conf.append(results[0][0].item())
         total += targets.size(0)
         correct += predicted.eq(y.data).cpu().sum()
 
     # Save checkpoint when best model
+    print (conf)
+    p_hat=np.array(conf)
+    #print (p_hat)
+    epistemic = np.mean(p_hat ** 2, axis=0) - np.mean(p_hat, axis=0) ** 2
+
+    print ("Epistemic Uncertainity is: ", epistemic)
+    """
+    conv1_var = dict(net.named_parameters())['conv1.qw_logvar'][0]
+    print(conv1_var)
+    print('--------------------')
+    conv1_mean = dict(net.named_parameters())['conv1.qw_mean'][0]
+    print(conv1_mean)
+    print('--------------------')
+    conv1_si = dict(net.named_parameters())['conv1.conv_qw_si'][0]
+    print(conv1_si)
+    print('--------------------')
+    conv1_alpha = dict(net.named_parameters())['conv1.log_alpha'][0]
+    print(conv1_alpha)
+    print('--------------------')
+    """
     acc =(100*correct/total)/cf.num_samples
     print("\n| Validation Epoch #%d\t\t\tLoss: %.4f Acc@1: %.2f%%" %(epoch, loss.data[0], acc))
-    test_diagnostics_to_write = {'Validation Epoch':epoch, 'Loss':loss.data[0], 'Accuracy': acc}
+    test_diagnostics_to_write = {'Validation Epoch':epoch, 'Loss':loss.data[0], 'Accuracy': acc, 'Epistemic Uncertainity:': epistemic}
+    #values_to_write={'Epoch':epoch, 'Mean':conv1_mean, 'Si': conv1_si,'Alpha':conv1_alpha}
     with open(logfile, 'a') as lf:
         lf.write(str(test_diagnostics_to_write))
+    #with open(value_file, 'a') as lf:
+    #    lf.write(str(values_to_write))
 
     if acc > best_acc:
         print('| Saving Best model...\t\t\tTop1 = %.2f%%' %(acc))
