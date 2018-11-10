@@ -159,7 +159,7 @@ if use_cuda:
 vi = GaussianVariationalInference(torch.nn.CrossEntropyLoss())
 
 logfile = os.path.join('diagnostics_Bayes{}_{}_{}.txt'.format(args.net_type, args.dataset, cf.num_samples))
-#value_file = os.path.join("values{}_{}.txt".format(args.net_type, args.dataset))
+value_file = os.path.join("values{}_{}.txt".format(args.net_type, args.dataset))
 
 # Training
 def train(epoch):
@@ -248,12 +248,18 @@ def test(epoch):
         correct += predicted.eq(y.data).cpu().sum()
 
     # Save checkpoint when best model
-    print (conf)
+    #print (conf)
     p_hat=np.array(conf)
     #print (p_hat)
+    confidence_mean=np.mean(p_hat, axis=0)
+    confidence_var=np.var(p_hat, axis=0)
     epistemic = np.mean(p_hat ** 2, axis=0) - np.mean(p_hat, axis=0) ** 2
+    aleatoric = np.mean(p_hat * (1 - p_hat), axis=0)
 
     print ("Epistemic Uncertainity is: ", epistemic)
+    print("Aleatoric Uncertainity is: ", aleatoric)
+    print("Mean is: ", confidence_mean)
+    print("Variance is: ", confidence_var)
     """
     conv1_var = dict(net.named_parameters())['conv1.qw_logvar'][0]
     print(conv1_var)
@@ -270,12 +276,12 @@ def test(epoch):
     """
     acc =(100*correct/total)/cf.num_samples
     print("\n| Validation Epoch #%d\t\t\tLoss: %.4f Acc@1: %.2f%%" %(epoch, loss.data[0], acc))
-    test_diagnostics_to_write = {'Validation Epoch':epoch, 'Loss':loss.data[0], 'Accuracy': acc, 'Epistemic Uncertainity:': epistemic}
-    #values_to_write={'Epoch':epoch, 'Mean':conv1_mean, 'Si': conv1_si,'Alpha':conv1_alpha}
+    test_diagnostics_to_write = {'Validation Epoch':epoch, 'Loss':loss.data[0], 'Accuracy': acc}
+    values_to_write={'Epoch':epoch, 'Confidence Mean: ':confidence_mean, 'Confidence Variance:':confidence_var, 'Epistemic Uncertainity: ': epistemic, 'Aleatoric Uncertainity: ':aleatoric}
     with open(logfile, 'a') as lf:
         lf.write(str(test_diagnostics_to_write))
-    #with open(value_file, 'a') as lf:
-    #    lf.write(str(values_to_write))
+    with open(value_file, 'a') as lf:
+        lf.write(str(values_to_write))
 
     if acc > best_acc:
         print('| Saving Best model...\t\t\tTop1 = %.2f%%' %(acc))
