@@ -170,7 +170,7 @@ def train(epoch):
     optimizer = optim.Adam(net.parameters(), lr=cf.learning_rate(cf.lr, epoch), weight_decay=cf.weight_decay)
 
     print('\n=> Training Epoch #%d, LR=%.4f' %(epoch, cf.learning_rate(cf.lr, epoch)))
-    m = math.ceil(len(testset) / cf.batch_size)
+    m = math.ceil(len(trainset) / cf.batch_size)
     for batch_idx, (inputs_value, targets) in enumerate(trainloader):
 
         x = inputs_value.view(-1, inputs, resize, resize).repeat(cf.num_samples, 1, 1, 1)
