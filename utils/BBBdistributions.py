@@ -69,16 +69,16 @@ class FixedNormal(Distribution):
 
 class Normalout(Distribution):
     # scalar version
-    def __init__(self, mu, si):
+    def __init__(self, mu, std):
         self.mu = mu
-        self.si = si
+        self.std = std
         self.shape = mu.size()
 
         super(Normalout, self).__init__()
 
     def logpdf(self, x):
         c = - float(0.5 * math.log(2 * math.pi))
-        return c - 0.5 * self.si - (x - self.mu).pow(2) / (2 * torch.exp(self.si))
+        return c - 0.5 * self.std - (x - self.mu).pow(2) / (2 * torch.exp(self.std))
 
     def pdf(self, x):
         return torch.exp(self.logpdf(x))
@@ -89,10 +89,10 @@ class Normalout(Distribution):
         else:
             eps = torch.FloatTensor(self.shape).normal_()
         # local reparameterization trick
-        return self.mu + torch.exp(0.5 * self.si) * eps
+        return self.mu + torch.exp(0.5 * self.std) * eps
 
     def entropy(self):
-        return 0.5 * math.log(2. * math.pi * math.e) + 0.5 * self.si
+        return 0.5 * math.log(2. * math.pi * math.e) + 0.5 * self.std
 
 
 class FixedMixtureNormal(nn.Module):

@@ -50,17 +50,20 @@ class _ConvNd(nn.Module):
         # approximate posterior weights...
         self.qw_mean = Parameter(torch.Tensor(out_channels, in_channels // groups, *kernel_size))
         self.qw_logvar = Parameter(torch.Tensor(out_channels, in_channels // groups, *kernel_size))
+
+        # optionally add bias
         # self.qb_mean = Parameter(torch.Tensor(out_channels))
         # self.qb_logvar = Parameter(torch.Tensor(out_channels))
 
         # ...and output...
         self.conv_qw_mean = Parameter(torch.Tensor(out_channels, in_channels // groups, *kernel_size))
-        self.conv_qw_si = Parameter(torch.Tensor(out_channels, in_channels // groups, *kernel_size))
+        self.conv_qw_std = Parameter(torch.Tensor(out_channels, in_channels // groups, *kernel_size))
 
         # ...as normal distributions
         self.qw = Normal(mu=self.qw_mean, logvar=self.qw_logvar)
         # self.qb = Normal(mu=self.qb_mean, logvar=self.qb_logvar)
-        self.conv_qw = Normalout(mu=self.conv_qw_mean, si=self.conv_qw_si)
+
+        self.conv_qw = Normalout(mu=self.conv_qw_mean, si=self.conv_qw_std)
 
         # initialise
         self.log_alpha = Parameter(torch.Tensor(1, 1))
@@ -68,7 +71,7 @@ class _ConvNd(nn.Module):
         # prior model
         # (does not have any trainable parameters so we use fixed normal or fixed mixture normal distributions)
         self.pw = distribution_selector(mu=0.0, logvar=p_logvar_init, pi=p_pi)
-        #self.pb = distribution_selector(mu=0.0, logvar=p_logvar_init, pi=p_pi)
+        # self.pb = distribution_selector(mu=0.0, logvar=p_logvar_init, pi=p_pi)
 
         # initialize all parameters
         self.reset_parameters()
@@ -81,10 +84,12 @@ class _ConvNd(nn.Module):
         stdv = 1. / math.sqrt(n)
         self.qw_mean.data.uniform_(-stdv, stdv)
         self.qw_logvar.data.uniform_(-stdv, stdv).add_(self.q_logvar_init)
-        #self.qb_mean.data.uniform_(-stdv, stdv)
-        #self.qb_logvar.data.uniform_(-stdv, stdv).add_(self.q_logvar_init)
+
+        # self.qb_mean.data.uniform_(-stdv, stdv)
+        # self.qb_logvar.data.uniform_(-stdv, stdv).add_(self.q_logvar_init)
+
         self.conv_qw_mean.data.uniform_(-stdv, stdv)
-        self.conv_qw_si.data.uniform_(-stdv, stdv).add_(self.q_logvar_init)
+        self.conv_qw_std.data.uniform_(-stdv, stdv).add_(self.q_logvar_init)
         self.log_alpha.data.uniform_(-stdv, stdv)
 
     def extra_repr(self):
@@ -127,18 +132,18 @@ class BBBConv2d(_ConvNd):
         # local reparameterization trick for convolutional layer
         conv_qw_mean = F.conv2d(input=input, weight=self.qw_mean, stride=self.stride, padding=self.padding,
                                 dilation=self.dilation, groups=self.groups)
-        conv_qw_si = torch.sqrt(1e-8 + F.conv2d(input=input.pow(2), weight=torch.exp(self.log_alpha)*self.qw_mean.pow(2),
-                                                stride=self.stride, padding=self.padding, dilation=self.dilation, groups=self.groups))
+        conv_qw_std = torch.sqrt(1e-8 + F.conv2d(input=input.pow(2), weight=torch.exp(self.log_alpha)*self.qw_mean.pow(2),
+                                                 stride=self.stride, padding=self.padding, dilation=self.dilation, groups=self.groups))
 
         if cuda:
             conv_qw_mean.cuda()
-            conv_qw_si.cuda()
+            conv_qw_std.cuda()
 
         # sample from output
         if cuda:
-            output = conv_qw_mean + conv_qw_si * (torch.randn(conv_qw_mean.size())).cuda()
+            output = conv_qw_mean + conv_qw_std * (torch.randn(conv_qw_mean.size())).cuda()
         else:
-            output = conv_qw_mean + conv_qw_si * (torch.randn(conv_qw_mean.size()))
+            output = conv_qw_mean + conv_qw_std * (torch.randn(conv_qw_mean.size()))
 
         if cuda:
             output.cuda()
@@ -174,37 +179,39 @@ class BBBLinearFactorial(nn.Module):
         # Approximate posterior weights...
         self.qw_mean = Parameter(torch.Tensor(out_features, in_features))
         self.qw_logvar = Parameter(torch.Tensor(out_features, in_features))
-        #self.qb_mean = Parameter(torch.Tensor(out_features))
-        #self.qb_logvar = Parameter(torch.Tensor(out_features))
+
+        # optionally add bias
+        # self.qb_mean = Parameter(torch.Tensor(out_features))
+        # self.qb_logvar = Parameter(torch.Tensor(out_features))
 
         # ...and output...
         self.fc_qw_mean = Parameter(torch.Tensor(out_features, in_features))
-        self.fc_qw_si = Parameter(torch.Tensor(out_features, in_features))
+        self.fc_qw_std = Parameter(torch.Tensor(out_features, in_features))
 
         # ...as normal distributions
         self.qw = Normal(mu=self.qw_mean, logvar=self.qw_logvar)
-        #self.qb = Normal(mu=self.qb_mean, logvar=self.qb_logvar)
-        self.fc_qw = Normalout(mu=self.fc_qw_mean, si=self.fc_qw_si)
+        # self.qb = Normal(mu=self.qb_mean, logvar=self.qb_logvar)
+        self.fc_qw = Normalout(mu=self.fc_qw_mean, si=self.fc_qw_std)
 
         # initialise
         self.log_alpha = Parameter(torch.Tensor(1, 1))
 
         # prior model
         self.pw = distribution_selector(mu=0.0, logvar=p_logvar_init, pi=p_pi)
-        #self.pb = distribution_selector(mu=0.0, logvar=p_logvar_init, pi=p_pi)
+        # self.pb = distribution_selector(mu=0.0, logvar=p_logvar_init, pi=p_pi)
 
         # initialize all paramaters
         self.reset_parameters()
 
     def reset_parameters(self):
-        # initialize (learnable) approximate posterior parameters
+        # initialize (trainable) approximate posterior parameters
         stdv = 10. / math.sqrt(self.in_features)
         self.qw_mean.data.uniform_(-stdv, stdv)
         self.qw_logvar.data.uniform_(-stdv, stdv).add_(self.q_logvar_init)
-        #self.qb_mean.data.uniform_(-stdv, stdv)
-        #self.qb_logvar.data.uniform_(-stdv, stdv).add_(self.q_logvar_init)
+        # self.qb_mean.data.uniform_(-stdv, stdv)
+        # self.qb_logvar.data.uniform_(-stdv, stdv).add_(self.q_logvar_init)
         self.fc_qw_mean.data.uniform_(-stdv, stdv)
-        self.fc_qw_si.data.uniform_(-stdv, stdv).add_(self.q_logvar_init)
+        self.fc_qw_std.data.uniform_(-stdv, stdv).add_(self.q_logvar_init)
         self.log_alpha.data.uniform_(-stdv, stdv)
 
     def forward(self, input):
