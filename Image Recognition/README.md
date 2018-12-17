@@ -1,21 +1,47 @@
-# Bayesian CNN
+# Bayesian CNN with Variational Inference for Image Recognition task
 
-Implementation of [Bayes by Backprop](https://arxiv.org/abs/1505.05424) in a convolutional neural network.
+We introduce **Bayesian convolutional neural networks with variational inference**, a variant of convolutional neural networks (CNNs), in which the intractable posterior probability distributions over weights are inferred by **Bayes by Backprop**. We demonstrate how our proposed variational inference method achieves performances equivalent to frequentist inference in identical architectures on several datasets (MNIST, CIFAR10, CIFAR100), while the two desiderata, a measure for uncertainty and regularization are incorporated naturally. We examine in detail how this measure for uncertainty, namely the predictive variance, can be decomposed into aleatoric and epistemic uncertainties. 
 
-### One convolutional layer with distributions over weights in each filter
+---------------------------------------------------------------------------------------------------------
 
-![Distribution over weights in a CNN's filter.](figures/CNNwithdist.png)
+
+### One convolutional layer with distributions over weights in each filter Vs frequentist layer filter weight
+
+![Distribution over weights in a CNN's filter.](figures/BayesCNNwithdist.png)
+
+---------------------------------------------------------------------------------------------------------
 
 ### Fully Bayesian perspective of an entire CNN 
 
 ![Distributions must be over weights in convolutional layers and weights in fully-connected layers.](figures/CNNwithdist_git.png)
 
-### Results 
-#### Results on MNIST, CIFAR-10 and CIFAR-100 with 3Conv3FC 
+---------------------------------------------------------------------------------------------------------
 
-![Results MNIST, CIFAR-10 and CIFAR-100 with 3Conv3FC](figures/results_CNN.png)
+##Results 
 
-If you are using this work, please cite the authors:
+### Results on MNIST dataset
+
+![Result on MNIST dataset with AlexNet and LeNet](results/plots/results_mnist.png)
+
+
+---------------------------------------------------------------------------------------------------------
+
+### Results on CIFAR10 dataset
+
+![Result on CIFAR10 dataset with AlexNet and LeNet](results/plots/results_cifar10.png)
+
+---------------------------------------------------------------------------------------------------------
+
+
+### Results on CIFAR100 dataset
+
+![Result on CIFAR100 dataset with AlexNet and LeNet](results/plots/results_cifar100.png)
+
+---------------------------------------------------------------------------------------------------------
+
+
+If you are using this work, please cite:
+
 ```
 @article{shridhar2018bayesian,
   title={Bayesian Convolutional Neural Networks with Variational Inference},
