@@ -5,7 +5,7 @@ We introduce **Bayesian convolutional neural networks with variational inference
 ---------------------------------------------------------------------------------------------------------
 
 
-### One convolutional layer with distributions over weights in each filter Vs frequentist layer filter weight
+### Filter weight distributions in a Bayesian Vs Frequentist approach
 
 ![Distribution over weights in a CNN's filter.](figures/BayesCNNwithdist.png)
 
@@ -17,7 +17,7 @@ We introduce **Bayesian convolutional neural networks with variational inference
 
 ---------------------------------------------------------------------------------------------------------
 
-##Results 
+## Results 
 
 ### Results on MNIST dataset
 
