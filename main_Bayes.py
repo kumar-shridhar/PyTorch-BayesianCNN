@@ -41,7 +41,7 @@ parser.add_argument('--net_type', default='lenet', type=str, help='model')
 #parser.add_argument('--p_logvar_init', default=0, type=int, help='p_logvar_init')
 #parser.add_argument('--q_logvar_init', default=-10, type=int, help='q_logvar_init')
 #parser.add_argument('--weight_decay', default=0.0005, type=float, help='weight_decay')
-parser.add_argument('--dataset', default='cifar10', type=str, help='dataset = [mnist/cifar10/cifar100/fashionmnist/stl10]')
+parser.add_argument('--dataset', default='CIFAR10', type=str, help='dataset = [MNIST/CIFAR10/CIFAR100]')
 parser.add_argument('--resume', '-r', action='store_true', help='resume from checkpoint')
 parser.add_argument('--testOnly', '-t', action='store_true', help='Test mode with the saved model')
 args = parser.parse_args()
@@ -74,47 +74,30 @@ transform_test = transforms.Compose([
 ])
 
 
-if (args.dataset == 'cifar10'):
-    print("| Preparing CIFAR-10 dataset...")
-    sys.stdout.write("| ")
-    trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_train)
-    testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=False, transform=transform_test)
+
+print("| Preparing {} dataset...".format(args.dataset))
+dataset_prep = 'torchvision.datasets.{}'.format(args.dataset)
+trainset = dataset_prep(root='./data', train=True, download=True, transform=transform_train)
+testset = dataset_prep(root='./data', train=False, download=False, transform=transform_test)
+
+
+if (dataset_name == 'CIFAR10'):
     outputs = 10
     inputs = 3
 
-elif (args.dataset == 'cifar100'):
-    print("| Preparing CIFAR-100 dataset...")
-    sys.stdout.write("| ")
-    trainset = torchvision.datasets.CIFAR100(root='./data', train=True, download=True, transform=transform_train)
-    testset = torchvision.datasets.CIFAR100(root='./data', train=False, download=False, transform=transform_test)
+elif (dataset_name == 'CIFAR100'):
     outputs = 100
     inputs = 3
 
-elif (args.dataset == 'mnist'):
-    print("| Preparing MNIST dataset...")
-    sys.stdout.write("| ")
-    trainset = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=transform_train)
-    testset = torchvision.datasets.MNIST(root='./data', train=False, download=False, transform=transform_test)
+elif (dataset_name == 'MNIST'):
     outputs = 10
     inputs = 1
-
-elif (args.dataset == 'fashionmnist'):
-    print("| Preparing FASHIONMNIST dataset...")
-    sys.stdout.write("| ")
-    trainset = torchvision.datasets.FashionMNIST(root='./data', train=True, download=True, transform=transform_train)
-    testset = torchvision.datasets.FashionMNIST(root='./data', train=False, download=False, transform=transform_test)
-    outputs = 10
-    inputs = 1
-elif (args.dataset == 'stl10'):
-    print("| Preparing STL10 dataset...")
-    sys.stdout.write("| ")
-    trainset = torchvision.datasets.STL10(root='./data',  split='train', download=True, transform=transform_train)
-    testset = torchvision.datasets.STL10(root='./data',  split='test', download=False, transform=transform_test)
-    outputs = 10
-    inputs = 3
 
 trainloader = torch.utils.data.DataLoader(trainset, batch_size=cf.batch_size, shuffle=True, num_workers=4)
 testloader = torch.utils.data.DataLoader(testset, batch_size=cf.batch_size, shuffle=False, num_workers=4)
+
+
+
 
 
 # Return network & file name
@@ -125,14 +108,11 @@ def getNetwork(args):
     elif (args.net_type == 'alexnet'):
         net = BBBAlexNet(outputs,inputs)
         file_name = 'alexnet-'
-    elif (args.net_type == 'squeezenet'):
-        net = BBBSqueezeNet(outputs,inputs)
-        file_name = 'squeezenet-'
     elif (args.net_type == '3conv3fc'):
         net = BBB3Conv3FC(outputs,inputs)
         file_name = '3Conv3FC-'
     else:
-        print('Error : Network should be either [LeNet / AlexNet /SqueezeNet/ 3Conv3FC')
+        print('Error : Network should be either [LeNet / AlexNet / 3Conv3FC')
         sys.exit(0)
 
     return net, file_name
@@ -245,7 +225,8 @@ def test(epoch):
         #print(results[0][0].item())
         conf.append(results[0][0].item())
         total += targets.size(0)
-        correct += predicted.eq(y.data).cpu().sum()
+        correct += preds
+        dicted.eq(y.data).cpu().sum()
 
     # Save checkpoint when best model
     #print (conf)
