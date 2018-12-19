@@ -19,17 +19,11 @@ We introduce **Bayesian convolutional neural networks with variational inference
 
 ## Results 
 
-### Results on MNIST dataset
+### Results on MNIST and CIFAR 10 dataset
 
 ![Table showing MNIST and CIFAR10 results](figures/CIFAR10MNISTTable.png)
 
 ![Result on MNIST dataset with AlexNet and LeNet](results/plots/results_mnist.png)
-
-
-
----------------------------------------------------------------------------------------------------------
-
-### Results on CIFAR10 dataset
 
 ![Result on CIFAR10 dataset with AlexNet and LeNet](results/plots/results_cifar10.png)
 
