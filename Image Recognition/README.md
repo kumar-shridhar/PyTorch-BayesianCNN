@@ -21,7 +21,10 @@ We introduce **Bayesian convolutional neural networks with variational inference
 
 ### Results on MNIST dataset
 
+![Table showing MNIST and CIFAR10 results](figures/CIFAR10MNISTTable.png)
+
 ![Result on MNIST dataset with AlexNet and LeNet](results/plots/results_mnist.png)
+
 
 
 ---------------------------------------------------------------------------------------------------------
@@ -35,9 +38,15 @@ We introduce **Bayesian convolutional neural networks with variational inference
 
 ### Results on CIFAR100 dataset
 
+![Table showing CIFAR100 results](figures/CIFAR100Table.png)
+
 ![Result on CIFAR100 dataset with AlexNet and LeNet](results/plots/results_cifar100.png)
 
----------------------------------------------------------------------------------------------------------
+--------------------------------------------------------------------------------------------------------
+
+### Uncertainty Estimation
+
+![Uncertainty Estimation on LeNet5](figures/Uncertainty.png)
 
 
 If you are using this work, please cite:
@@ -50,3 +59,5 @@ If you are using this work, please cite:
   year={2018}
 }
 ```
+
+--------------------------------------------------------------------------------------------------------
