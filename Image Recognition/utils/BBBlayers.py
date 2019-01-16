@@ -63,7 +63,7 @@ class _ConvNd(nn.Module):
         self.qw = Normal(mu=self.qw_mean, logvar=self.qw_logvar)
         # self.qb = Normal(mu=self.qb_mean, logvar=self.qb_logvar)
 
-        self.conv_qw = Normalout(mu=self.conv_qw_mean, si=self.conv_qw_std)
+        self.conv_qw = Normalout(mu=self.conv_qw_mean, std=self.conv_qw_std)
 
         # initialise
         self.log_alpha = Parameter(torch.Tensor(1, 1))
