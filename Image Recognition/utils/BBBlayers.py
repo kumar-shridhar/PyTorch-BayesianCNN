@@ -63,7 +63,7 @@ class _ConvNd(nn.Module):
         self.qw = Normal(mu=self.qw_mean, logvar=self.qw_logvar)
         # self.qb = Normal(mu=self.qb_mean, logvar=self.qb_logvar)
 
-        self.conv_qw = Normalout(mu=self.conv_qw_mean, si=self.conv_qw_std)
+        self.conv_qw = Normalout(mu=self.conv_qw_mean, std=self.conv_qw_std)
 
         # initialise
         self.log_alpha = Parameter(torch.Tensor(1, 1))
@@ -192,7 +192,7 @@ class BBBLinearFactorial(nn.Module):
         # ...as normal distributions
         self.qw = Normal(mu=self.qw_mean, logvar=self.qw_logvar)
         # self.qb = Normal(mu=self.qb_mean, logvar=self.qb_logvar)
-        self.fc_qw = Normalout(mu=self.fc_qw_mean, si=self.fc_qw_std)
+        self.fc_qw = Normalout(mu=self.fc_qw_mean, std=self.fc_qw_std)
 
         # initialise
         self.log_alpha = Parameter(torch.Tensor(1, 1))
@@ -235,7 +235,7 @@ class BBBLinearFactorial(nn.Module):
         # sample from output
         if cuda:
             #output = fc_qw_mean + fc_qw_si * (torch.randn(fc_qw_mean.size())).cuda()
-            output = conv_qw_mean + conv_qw_si * torch.cuda.FloatTensor(conv_qw_mean.size()).normal_()
+            output = fc_qw_mean + fc_qw_si * torch.cuda.FloatTensor(fc_qw_mean.size()).normal_()
         else:
             output = fc_qw_mean + fc_qw_si * (torch.randn(fc_qw_mean.size()))
 
