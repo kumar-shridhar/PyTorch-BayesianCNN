@@ -3,7 +3,7 @@ import torch
 from torch import nn
 from torch.nn import Parameter
 import torch.nn.functional as F
-from .BBBdistributions import Normal, Normalout, distribution_selector
+from .BBBdistributions import Normal, distribution_selector
 from torch.nn.modules.utils import _pair
 
 cuda = torch.cuda.is_available()
@@ -47,9 +47,11 @@ class _ConvNd(nn.Module):
         self.p_logvar_init = p_logvar_init
         self.q_logvar_init = q_logvar_init
 
+        self.weight = Parameter(torch.Tensor(out_channels, in_channels// groups, *kernel_size))
+
         # approximate posterior weights...
-        self.qw_mean = Parameter(torch.Tensor(out_channels, in_channels // groups, *kernel_size))
-        self.qw_logvar = Parameter(torch.Tensor(out_channels, in_channels // groups, *kernel_size))
+        # self.qw_mean = Parameter(torch.Tensor(out_channels, in_channels // groups, *kernel_size))
+        # self.qw_logvar = Parameter(torch.Tensor(out_channels, in_channels // groups, *kernel_size))
 
         # optionally add bias
         # self.qb_mean = Parameter(torch.Tensor(out_channels))
@@ -60,10 +62,10 @@ class _ConvNd(nn.Module):
         self.conv_qw_std = Parameter(torch.Tensor(out_channels, in_channels // groups, *kernel_size))
 
         # ...as normal distributions
-        self.qw = Normal(mu=self.qw_mean, logvar=self.qw_logvar)
+        # self.qw = Normal(mu=self.qw_mean, logvar=self.qw_logvar)
         # self.qb = Normal(mu=self.qb_mean, logvar=self.qb_logvar)
 
-        self.conv_qw = Normalout(mu=self.conv_qw_mean, std=self.conv_qw_std)
+        self.conv_qw = Normal(mu=self.conv_qw_mean, logvar=self.conv_qw_std)
 
         # initialise
         self.log_alpha = Parameter(torch.Tensor(1, 1))
@@ -82,8 +84,10 @@ class _ConvNd(nn.Module):
         for k in self.kernel_size:
             n *= k
         stdv = 1. / math.sqrt(n)
-        self.qw_mean.data.uniform_(-stdv, stdv)
-        self.qw_logvar.data.uniform_(-stdv, stdv).add_(self.q_logvar_init)
+
+        self.weight.data.uniform_(-stdv, stdv)
+        # self.qw_mean.data.uniform_(-stdv, stdv)
+        # self.qw_logvar.data.uniform_(-stdv, stdv).add_(self.q_logvar_init)
 
         # self.qb_mean.data.uniform_(-stdv, stdv)
         # self.qb_logvar.data.uniform_(-stdv, stdv).add_(self.q_logvar_init)
@@ -130,9 +134,10 @@ class BBBConv2d(_ConvNd):
         """
 
         # local reparameterization trick for convolutional layer
-        conv_qw_mean = F.conv2d(input=input, weight=self.qw_mean, stride=self.stride, padding=self.padding,
-                                dilation=self.dilation, groups=self.groups)
-        conv_qw_std = torch.sqrt(1e-8 + F.conv2d(input=input.pow(2), weight=torch.exp(self.log_alpha)*self.qw_mean.pow(2),
+
+        conv_qw_mean = F.conv2d(input=input, weight=self.weight, stride=self.stride, padding=self.padding,
+                                     dilation=self.dilation, groups=self.groups)
+        conv_qw_std = torch.sqrt(1e-8 + F.conv2d(input=input.pow(2), weight=torch.exp(self.log_alpha)*self.weight.pow(2),
                                                  stride=self.stride, padding=self.padding, dilation=self.dilation, groups=self.groups))
 
         if cuda:
@@ -149,10 +154,15 @@ class BBBConv2d(_ConvNd):
         if cuda:
             output.cuda()
 
-        w_sample = self.conv_qw.sample()
+        conv_qw = Normal(mu=conv_qw_mean, logvar=conv_qw_std)
+
+        #self.conv_qw_mean = Parameter(torch.Tensor(conv_qw_mean.cpu()))
+        #self.conv_qw_std = Parameter(torch.Tensor(conv_qw_std.cpu()))
+
+        w_sample = conv_qw.sample()
 
         # KL divergence
-        qw_logpdf = self.conv_qw.logpdf(w_sample)
+        qw_logpdf = conv_qw.logpdf(w_sample)
 
         kl = torch.sum(qw_logpdf - self.pw.logpdf(w_sample))
 
@@ -177,9 +187,11 @@ class BBBLinearFactorial(nn.Module):
         self.p_logvar_init = p_logvar_init
         self.q_logvar_init = q_logvar_init
 
+        self.weight = Parameter(torch.Tensor(out_features, in_features))
+
         # Approximate posterior weights...
-        self.qw_mean = Parameter(torch.Tensor(out_features, in_features))
-        self.qw_logvar = Parameter(torch.Tensor(out_features, in_features))
+        # self.qw_mean = Parameter(torch.Tensor(out_features, in_features))
+        # self.qw_logvar = Parameter(torch.Tensor(out_features, in_features))
 
         # optionally add bias
         # self.qb_mean = Parameter(torch.Tensor(out_features))
@@ -190,9 +202,9 @@ class BBBLinearFactorial(nn.Module):
         self.fc_qw_std = Parameter(torch.Tensor(out_features, in_features))
 
         # ...as normal distributions
-        self.qw = Normal(mu=self.qw_mean, logvar=self.qw_logvar)
+        # self.qw = Normal(mu=self.qw_mean, logvar=self.qw_logvar)
         # self.qb = Normal(mu=self.qb_mean, logvar=self.qb_logvar)
-        self.fc_qw = Normalout(mu=self.fc_qw_mean, std=self.fc_qw_std)
+        self.fc_qw = Normal(mu=self.fc_qw_mean, logvar=self.fc_qw_std)
 
         # initialise
         self.log_alpha = Parameter(torch.Tensor(1, 1))
@@ -207,8 +219,10 @@ class BBBLinearFactorial(nn.Module):
     def reset_parameters(self):
         # initialize (trainable) approximate posterior parameters
         stdv = 10. / math.sqrt(self.in_features)
-        self.qw_mean.data.uniform_(-stdv, stdv)
-        self.qw_logvar.data.uniform_(-stdv, stdv).add_(self.q_logvar_init)
+
+        self.weight.data.uniform_(-stdv, stdv)
+        # self.qw_mean.data.uniform_(-stdv, stdv)
+        # self.qw_logvar.data.uniform_(-stdv, stdv).add_(self.q_logvar_init)
         # self.qb_mean.data.uniform_(-stdv, stdv)
         # self.qb_logvar.data.uniform_(-stdv, stdv).add_(self.q_logvar_init)
         self.fc_qw_mean.data.uniform_(-stdv, stdv)
@@ -225,8 +239,8 @@ class BBBLinearFactorial(nn.Module):
         :return: output, kl-divergence
         """
 
-        fc_qw_mean = F.linear(input=input, weight=self.qw_mean)
-        fc_qw_si = torch.sqrt(1e-8 + F.linear(input=input.pow(2), weight=torch.exp(self.log_alpha)*self.qw_mean.pow(2)))
+        fc_qw_mean = F.linear(input=input, weight=self.weight)
+        fc_qw_si = torch.sqrt(1e-8 + F.linear(input=input.pow(2), weight=torch.exp(self.log_alpha)*self.weight.pow(2)))
 
         if cuda:
             fc_qw_mean.cuda()
@@ -241,6 +255,9 @@ class BBBLinearFactorial(nn.Module):
 
         if cuda:
             output.cuda()
+
+        self.fc_qw_mean = Parameter(torch.Tensor(fc_qw_mean.cpu()))
+        self.fc_qw_std = Parameter(torch.Tensor(fc_qw_si.cpu()))
 
         w_sample = self.fc_qw.sample()
 
@@ -263,9 +280,8 @@ class GaussianVariationalInference(nn.Module):
         self.loss = loss
 
     def forward(self, logits, y, kl, beta):
-        logpy = -self.loss(logits, y)
+        logpy = self.loss(logits, y)
 
-        ll = logpy - beta * kl  # ELBO
-        loss = -ll
+        loss = logpy + beta * kl  # ELBO
 
         return loss

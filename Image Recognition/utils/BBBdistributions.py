@@ -67,33 +67,6 @@ class FixedNormal(Distribution):
         return c - 0.5 * self.logvar - (x - self.mu).pow(2) / (2 * math.exp(self.logvar))
 
 
-class Normalout(Distribution):
-    # scalar version
-    def __init__(self, mu, std):
-        self.mu = mu
-        self.std = std
-        self.shape = mu.size()
-
-        super(Normalout, self).__init__()
-
-    def logpdf(self, x):
-        c = - float(0.5 * math.log(2 * math.pi))
-        return c - 0.5 * self.std - (x - self.mu).pow(2) / (2 * torch.exp(self.std))
-
-    def pdf(self, x):
-        return torch.exp(self.logpdf(x))
-
-    def sample(self):
-        if self.mu.is_cuda:
-            eps = torch.cuda.FloatTensor(self.shape).normal_()
-        else:
-            eps = torch.FloatTensor(self.shape).normal_()
-        # local reparameterization trick
-        return self.mu + torch.exp(0.5 * self.std) * eps
-
-    def entropy(self):
-        return 0.5 * math.log(2. * math.pi * math.e) + 0.5 * self.std
-
 
 class FixedMixtureNormal(nn.Module):
     # scale mixture Gaussian prior (with scale mixture factor pi)
