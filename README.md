@@ -1,5 +1,7 @@
 [![996.icu](https://img.shields.io/badge/link-996.icu-red.svg)](https://996.icu)
 
+#### NOTE: This training loss goes to NaN as seen in the issues as well. I will update the code in 1-2 weeks with solved issues and some new measures for Uncertainty. Thank You. 
+
 # Bayesian CNN with Variational Inference and it's application
 
 In this repo **Bayesian Convolutional Neural Network (BayesCNN) using Variational Inference** is proposed, that introduces probability distribution over the weights. Furthermore, the proposed BayesCNN architecture is applied to tasks like **Image Classification, Image Super-Resolution and Generative Adversarial Networks**.
