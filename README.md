@@ -1,6 +1,6 @@
 [![996.icu](https://img.shields.io/badge/link-996.icu-red.svg)](https://996.icu)
 
-#### NOTE: This training loss goes to NaN as seen in the issues as well. I will update the code in 1-2 weeks with solved issues and some new measures for Uncertainty. Thank You. 
+#### NOTE: The training loss goes to NaN as seen in the issues section as well. I will update the code in 1-2 weeks with loss being fixed and a new measures for Uncertainty added. Thank You. 
 
 # Bayesian CNN with Variational Inference and it's application
 
