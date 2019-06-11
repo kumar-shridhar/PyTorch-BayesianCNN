@@ -27,7 +27,7 @@ class _ConvNd(nn.Module):
     """
 
     def __init__(self, in_channels, out_channels, kernel_size, stride,
-                 padding, dilation, output_padding, groups, p_logvar_init=0.05, p_pi=1.0, q_logvar_init=0.05):
+                 padding, dilation, output_padding, groups, p_logvar_init=0.15, p_pi=1.0, q_logvar_init=0.05):
         super(_ConvNd, self).__init__()
         if in_channels % groups != 0:
             raise ValueError('in_channels must be divisible by groups')
@@ -193,7 +193,7 @@ class BBBLinearFactorial(nn.Module):
     a distribution over each of the weights and biases
     in the layer.
     """
-    def __init__(self, in_features, out_features, p_logvar_init=0.05, p_pi=1.0, q_logvar_init=0.05):
+    def __init__(self, in_features, out_features, p_logvar_init=0.15, p_pi=1.0, q_logvar_init=0.05):
         # p_logvar_init, p_pi can be either
         # (list/tuples): prior model is a mixture of Gaussians components=len(p_pi)=len(p_logvar_init)
         # float: Gussian distribution
