@@ -181,7 +181,7 @@ class BBBConv2d(_ConvNd):
 
         # kl = torch.sum(qw_logpdf - self.pw.logpdf(w_sample))
 
-        kl = math.log(self.p_logvar_init) - self.conv_qw_std + (sigma_weight**2 + self.conv_qw_mean**2) / (2 * self.p_logvar_init ** 2) - 0.5
+        kl_ = math.log(self.p_logvar_init) - self.conv_qw_std + (sigma_weight**2 + self.conv_qw_mean**2) / (2 * self.p_logvar_init ** 2) - 0.5
         kl = kl_.sum()
 
         return output, kl
@@ -302,7 +302,7 @@ class BBBLinearFactorial(nn.Module):
 
         # kl = torch.sum(qw_logpdf - self.pw.logpdf(w_sample))
         output = F.linear(input=input, weight=weight)
-        kl = math.log(self.p_logvar_init) - self.fc_qw_std + (sigma_weight**2 + self.fc_qw_mean**2) / (2 * self.p_logvar_init ** 2) - 0.5
+        kl_ = math.log(self.p_logvar_init) - self.fc_qw_std + (sigma_weight**2 + self.fc_qw_mean**2) / (2 * self.p_logvar_init ** 2) - 0.5
         kl = kl_.sum()
 
         return output, kl
