@@ -19,7 +19,7 @@ class FlattenLayer(nn.Module):
         return x.view(-1, self.num_features)
 
 
-class _ConvNd(nn.Module):
+class BBBConv2d(nn.Module):
     """
     Describes a Bayesian convolutional layer with
     a distribution over each of the weights and biases
@@ -27,8 +27,8 @@ class _ConvNd(nn.Module):
     """
 
     def __init__(self, in_channels, out_channels, kernel_size, stride,
-                 padding, dilation, output_padding, groups, p_logvar_init=0.05, p_pi=1.0, q_logvar_init=0.05):
-        super(_ConvNd, self).__init__()
+                 padding, dilation=1, output_padding=0, groups=1, p_logvar_init=0.05, p_pi=1.0, q_logvar_init=-1.30):
+        super(BBBConv2d, self).__init__()
         if in_channels % groups != 0:
             raise ValueError('in_channels must be divisible by groups')
         if out_channels % groups != 0:
@@ -45,7 +45,7 @@ class _ConvNd(nn.Module):
 
         # initialize log variance of p and q
         self.p_logvar_init = p_logvar_init
-        self.q_logvar_init = math.log(q_logvar_init)
+        self.q_logvar_init = q_logvar_init
 
         #self.weight = Parameter(torch.Tensor(out_channels, in_channels// groups, kernel_size, kernel_size))
 
@@ -58,10 +58,10 @@ class _ConvNd(nn.Module):
         # self.qb_logvar = Parameter(torch.Tensor(out_channels))
 
         # ...and output...
-        self.conv_qw_mean = Parameter(torch.Tensor(out_channels, in_channels // groups, *kernel_size))
-        self.conv_qw_std = Parameter(torch.Tensor(out_channels, in_channels // groups, *kernel_size))
+        self.conv_qw_mean = Parameter(torch.Tensor(out_channels, in_channels // groups, kernel_size, kernel_size))
+        self.conv_qw_std = Parameter(torch.Tensor(out_channels, in_channels // groups, kernel_size, kernel_size))
 
-        self.register_buffer('eps_weight', torch.Tensor(out_channels, in_channels // groups, *kernel_size))
+        self.register_buffer('eps_weight', torch.Tensor(out_channels, in_channels // groups, kernel_size, kernel_size))
 
         # ...as normal distributions
         # self.qw = Normal(mu=self.qw_mean, logvar=self.qw_logvar)
@@ -85,8 +85,9 @@ class _ConvNd(nn.Module):
     def reset_parameters(self):
         # initialise (learnable) approximate posterior parameters
         n = self.in_channels
-        for k in self.kernel_size:
-            n *= k 
+        # for k in self.kernel_size:
+        #     n *= k ** 2 
+        n *= self.kernel_size ** 2
         stdv = 1. / math.sqrt(n)
 
         #self.weight.data.uniform_(-stdv, stdv)
@@ -116,18 +117,6 @@ class _ConvNd(nn.Module):
             s += ', bias=False'
         return s.format(**self.__dict__)
 
-
-class BBBConv2d(_ConvNd):
-    def __init__(self, in_channels, out_channels, kernel_size, stride=1,
-                 padding=0, dilation=1, groups=1):
-
-        kernel_size = _pair(kernel_size)
-        stride = _pair(stride)
-        padding = _pair(padding)
-        dilation = _pair(dilation)
-
-        super(BBBConv2d, self).__init__(in_channels, out_channels, kernel_size, stride, padding, dilation, _pair(0), groups)
-
     def forward(self, input):
         raise NotImplementedError()
 
@@ -151,6 +140,8 @@ class BBBConv2d(_ConvNd):
         #                              dilation=self.dilation, groups=self.groups)
         # conv_qw_std = torch.sqrt(1e-8 + F.conv2d(input=input.pow(2), weight=torch.exp(self.log_alpha)*weight.pow(2),
         #                                          stride=self.stride, padding=self.padding, dilation=self.dilation, groups=self.groups))
+
+        kl_ = math.log(self.p_logvar_init) - self.conv_qw_std + (sigma_weight**2 + self.conv_qw_mean**2) / (2 * self.p_logvar_init ** 2) - 0.5
 
         output = F.conv2d(input=input, weight=weight, stride=self.stride, padding=self.padding,
                                      dilation=self.dilation, groups=self.groups)
@@ -181,7 +172,6 @@ class BBBConv2d(_ConvNd):
 
         # kl = torch.sum(qw_logpdf - self.pw.logpdf(w_sample))
 
-        kl_ = math.log(self.p_logvar_init) - self.conv_qw_std + (sigma_weight**2 + self.conv_qw_mean**2) / (2 * self.p_logvar_init ** 2) - 0.5
         kl = kl_.sum()
 
         return output, kl
@@ -193,7 +183,7 @@ class BBBLinearFactorial(nn.Module):
     a distribution over each of the weights and biases
     in the layer.
     """
-    def __init__(self, in_features, out_features, p_logvar_init=0.05, p_pi=1.0, q_logvar_init=0.05):
+    def __init__(self, in_features, out_features, p_logvar_init=0.05, p_pi=1.0, q_logvar_init=-1.30):
         # p_logvar_init, p_pi can be either
         # (list/tuples): prior model is a mixture of Gaussians components=len(p_pi)=len(p_logvar_init)
         # float: Gussian distribution
@@ -203,7 +193,7 @@ class BBBLinearFactorial(nn.Module):
         self.in_features = in_features
         self.out_features = out_features
         self.p_logvar_init = p_logvar_init
-        self.q_logvar_init = math.log(q_logvar_init)
+        self.q_logvar_init = q_logvar_init
 
         # self.weight = Parameter(torch.Tensor(out_features, in_features))
 
@@ -301,8 +291,8 @@ class BBBLinearFactorial(nn.Module):
         # qw_logpdf = fc_qw.logpdf(w_sample)
 
         # kl = torch.sum(qw_logpdf - self.pw.logpdf(w_sample))
-        output = F.linear(input=input, weight=weight)
         kl_ = math.log(self.p_logvar_init) - self.fc_qw_std + (sigma_weight**2 + self.fc_qw_mean**2) / (2 * self.p_logvar_init ** 2) - 0.5
+        output = F.linear(input=input, weight=weight)
         kl = kl_.sum()
 
         return output, kl
