@@ -8,26 +8,31 @@ class BBBAlexNet(nn.Module):
 
     def __init__(self, outputs, inputs):
         super(BBBAlexNet, self).__init__()
-        self.conv1 = BBBConv2d(inputs, 64, kernel_size=11, stride=4, padding=5)
+
+        self.p_logvar_init = 0.05
+        self.q_logvar_init = math.log(0.05)
+
+
+        self.conv1 = BBBConv2d(inputs, 64, kernel_size=11, stride=4, padding=5, self.p_logvar_init, self.q_logvar_init )
         self.soft1 = nn.Softplus()
         self.pool1 = nn.MaxPool2d(kernel_size=2, stride=2)
 
-        self.conv2 = BBBConv2d(64, 192, kernel_size=5, padding=2)
+        self.conv2 = BBBConv2d(64, 192, kernel_size=5, padding=2, self.p_logvar_init, self.q_logvar_init )
         self.soft2 = nn.Softplus()
         self.pool2 = nn.MaxPool2d(kernel_size=2, stride=2)
 
-        self.conv3 = BBBConv2d(192, 384, kernel_size=3, padding=1)
+        self.conv3 = BBBConv2d(192, 384, kernel_size=3, padding=1, self.p_logvar_init, self.q_logvar_init )
         self.soft3 = nn.Softplus()
 
-        self.conv4 = BBBConv2d(384, 256, kernel_size=3, padding=1)
+        self.conv4 = BBBConv2d(384, 256, kernel_size=3, padding=1, self.p_logvar_init, self.q_logvar_init )
         self.soft4 = nn.Softplus()
 
-        self.conv5 = BBBConv2d(256, 128, kernel_size=3, padding=1)
+        self.conv5 = BBBConv2d(256, 128, kernel_size=3, padding=1, self.p_logvar_init, self.q_logvar_init )
         self.soft5 = nn.Softplus()
         self.pool3 = nn.MaxPool2d(kernel_size=2, stride=2)
 
         self.flatten = FlattenLayer(1 * 1 * 128)
-        self.fc1 = BBBLinearFactorial(1* 1 * 128, outputs)
+        self.fc1 = BBBLinearFactorial(1* 1 * 128, outputs, self.p_logvar_init, self.q_logvar_init)
 
 
         layers = [self.conv1, self.soft1, self.pool1, self.conv2, self.soft2, self.pool2, self.conv3, self.soft3,
