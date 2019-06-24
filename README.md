@@ -1,6 +1,6 @@
 [![996.icu](https://img.shields.io/badge/link-996.icu-red.svg)](https://996.icu)
 
-#### NOTE: The training loss goes to NaN as seen in the issues section as well. I will update the code in 1-2 weeks with loss being fixed and a new measures for Uncertainty added. Thank You. 
+#### NOTE: A basic version of code is up and running. If you face any problems, feel free to raise an issue.  
 
 # Bayesian CNN with Variational Inference and it's application
 
@@ -40,11 +40,11 @@ Our proposed method not only achieves performances equivalent to frequentist inf
 *   Feel free to cite the author, if the work is any help to you:
 
 ```
-@article{shridhar2018bayesian,
-  title={Bayesian Convolutional Neural Networks with Variational Inference},
-  author={Shridhar, Kumar and Laumann, Felix and Llopart Maurin, Adrian and Olsen, Martin and Liwicki, Marcus},
-  journal={arXiv preprint arXiv:1806.05978},
-  year={2018}
+@article{shridhar2019comprehensive,
+  title={A Comprehensive guide to Bayesian Convolutional Neural Network with Variational Inference},
+  author={Shridhar, Kumar and Laumann, Felix and Liwicki, Marcus},
+  journal={arXiv preprint arXiv:1901.02731},
+  year={2019}
 }
 ```
 
