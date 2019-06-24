@@ -10,13 +10,13 @@ from utils.BBBlayers import BBBConv2d, BBBLinearFactorial
 class BBBAlexNet(nn.Module):
     '''The architecture of AlexNet with Bayesian Layers'''
 
-    def __init__(self, outputs, img_width, inputs):
+    def __init__(self, outputs, inputs):
         super(BBBAlexNet, self).__init__()
 
         self.q_logvar_init = 0.05
         self.p_logvar_init = math.log(0.05)
-        self.img_width = img_width
-        self.classifier = BBBLinearFactorial(q_logvar_init, p_logvar_init, 1* 1 * 128, outputs)
+ 
+        self.classifier = BBBLinearFactorial(self.q_logvar_init, self.p_logvar_init, 1* 1 * 128, outputs)
 
         self.conv1 = BBBConv2d(self.q_logvar_init, self.p_logvar_init, inputs, 64, kernel_size=11, stride=4, padding=5)
         self.soft1 = nn.Softplus()
