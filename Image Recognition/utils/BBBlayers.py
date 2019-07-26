@@ -42,10 +42,12 @@ class BBBConv2d(nn.Module):
     def convprobforward(self, input):
         sig_weight = torch.exp(self.sigma_weight)
         weight = self.mu_weight + sig_weight * self.eps_weight.normal_()
+        # I believe this is a vector of kl divergences for each individual weight between its variational dist and prior 
         kl_ = math.log(self.q_logvar_init) - self.sigma_weight + (sig_weight**2 + self.mu_weight**2) / (2 * self.q_logvar_init ** 2) - 0.5
         bias = None
         
         out = F.conv2d(input, weight, bias, self.stride, self.padding, self.dilation, self.groups)
+        # because dists over each weight are assumed independent, we can compute total kl for dist over all weights as sum of individual kl's
         kl = kl_.sum() 
         return out, kl
 
@@ -75,6 +77,7 @@ class BBBLinearFactorial(nn.Module):
 
     def fcprobforward(self, input):
         sig_weight = torch.exp(self.sigma_weight)
+        # remap random noise distributed according to self.eps_weight (I think) to variational dist
         weight = self.mu_weight + sig_weight * self.eps_weight.normal_()
         kl_ = math.log(self.q_logvar_init) - self.sigma_weight + (sig_weight**2 + self.mu_weight**2) / (2 * self.q_logvar_init ** 2) - 0.5
         bias = None
