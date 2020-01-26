@@ -1,6 +1,6 @@
 import torch.nn.functional as F
 
-# cifa10 classes
+# cifar10 classes
 cifar10_classes = ['airplane', 'automobile', 'bird', 'cat', 'deer',
                    'dog', 'frog', 'horse', 'ship', 'truck']
 
