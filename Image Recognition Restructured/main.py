@@ -164,7 +164,7 @@ def valid_frequentist(net, criterion, valid_loader):
     return valid_loss
 
 
-def main(dataset, net_type, IS_BAYESIAN):
+def run(dataset, net_type, IS_BAYESIAN):
 
     # Hyper Parameter settings
     n_epochs = 150
@@ -228,4 +228,4 @@ if __name__ == '__main__':
     dataset = 'CIFAR10'
     net_type = 'alexnet'
 
-    main(dataset, net_type, IS_BAYESIAN)
+    run(dataset, net_type, IS_BAYESIAN)
