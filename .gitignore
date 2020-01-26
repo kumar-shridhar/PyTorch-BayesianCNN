@@ -1,3 +1,7 @@
 checkpoint/
 data/
 checkpoint_/
+**/__pycache__
+*.pyc
+**/.ipynb_checkpoints
+*.pt
