@@ -37,6 +37,7 @@ class TestModelForwardpass:
         out = net(batch)
         assert out.shape[0]==batch_size
 
+    @pytest.mark.skipif(not cuda_available, reason="CUDA not available")
     @pytest.mark.parametrize("model", bayesian_models)
     def test_bayesian_gpu(self, model):
         batch_size = np.random.randint(1, 256)
@@ -48,6 +49,7 @@ class TestModelForwardpass:
         out = net.probforward(batch)
         assert out[0].shape[0]==batch_size
 
+    @pytest.mark.skipif(not cuda_available, reason="CUDA not available")
     @pytest.mark.parametrize("model", non_bayesian_models)
     def test_non_bayesian_gpu(self, model):
         batch_size = np.random.randint(1, 256)
