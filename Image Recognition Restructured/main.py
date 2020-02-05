@@ -1,24 +1,14 @@
 from __future__ import print_function
 
 import os
-import sys
-import time
 import argparse
-import datetime
-import math
-import pickle
 
 import torchvision
 import torchvision.transforms as transforms
 import torch
-import torch.utils.data as data
 import numpy as np
 import torch.nn as nn
 from torch.optim import Adam
-import torch.nn.functional as F
-import torch.backends.cudnn as cudnn
-from torch.autograd import Variable
-from torchvision import datasets
 from torch.utils.data.sampler import SubsetRandomSampler
 
 import utils
@@ -102,7 +92,6 @@ def getModel(net_type, inputs, outputs, IS_BAYESIAN):
 def train_bayesian(net, optimizer, epoch, train_loader, train_data, beta_type):
     print('Epoch: %d' % epoch)
     net.train()
-    train_loss = 0
     correct = 0
     total = 0
     for batch_idx, (inputs, targets) in enumerate(train_loader):
@@ -121,10 +110,8 @@ def train_bayesian(net, optimizer, epoch, train_loader, train_data, beta_type):
 
 def test_bayesian(net, epoch, test_loader, ckpt_name):
     net.eval()
-    test_loss = 0
     correct = 0
-    total = 0
-    accuracy_max = 0    
+    total = 0   
     with torch.no_grad():
         for batch_idx, (inputs, targets) in enumerate(test_loader):
             inputs, targets = inputs.cuda(), targets.cuda()
@@ -170,9 +157,7 @@ def run(dataset, net_type, IS_BAYESIAN):
     # Hyper Parameter settings
     n_epochs = cfg.n_epochs
     lr = cfg.lr
-    weight_decay = cfg.weight_decay
     beta_type = cfg.beta_type
-    resize = cfg.resize
     num_workers = cfg.num_workers
     valid_size = cfg.valid_size
     batch_size = cfg.batch_size
