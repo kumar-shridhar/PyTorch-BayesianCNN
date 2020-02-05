@@ -48,7 +48,7 @@ def train_bayesian(net, optimizer, epoch, train_loader, train_data, beta_type):
     for batch_idx, (inputs, targets) in enumerate(train_loader):
         inputs, targets = inputs.cuda(), targets.cuda()
         optimizer.zero_grad()
-        outputs, kl = net.probforward(inputs)
+        outputs, kl = net(inputs)
         beta = utils.get_beta(epoch, len(train_data), beta_type)
         loss = utils.elbo(outputs, targets, kl, beta)
         loss.backward()
@@ -66,7 +66,7 @@ def test_bayesian(net, epoch, test_loader, ckpt_name):
     with torch.no_grad():
         for batch_idx, (inputs, targets) in enumerate(test_loader):
             inputs, targets = inputs.cuda(), targets.cuda()
-            outputs, _ = net.probforward(inputs)
+            outputs, _ = net(inputs)
             _, predicted = outputs.max(1)
             total += targets.size(0)
             correct += predicted.eq(targets).sum().item()

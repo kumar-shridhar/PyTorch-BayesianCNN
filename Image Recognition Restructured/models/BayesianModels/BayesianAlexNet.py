@@ -41,7 +41,7 @@ class BBBAlexNet(nn.Module):
 
         self.layers = nn.ModuleList(layers)
 
-    def probforward(self, x):
+    def forward(self, x):
         'Forward pass with Bayesian weights'
         kl = 0
         for layer in self.layers:
