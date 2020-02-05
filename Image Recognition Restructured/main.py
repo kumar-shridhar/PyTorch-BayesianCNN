@@ -3,14 +3,12 @@ from __future__ import print_function
 import os
 import argparse
 
-import torchvision
-import torchvision.transforms as transforms
 import torch
 import numpy as np
 import torch.nn as nn
 from torch.optim import Adam
-from torch.utils.data.sampler import SubsetRandomSampler
 
+import data
 import utils
 import config as cfg
 from models.BayesianModels.Bayesian3Conv3FC import BBB3Conv3FC
@@ -23,53 +21,6 @@ from models.NonBayesianModels.ThreeConvThreeFC import ThreeConvThreeFC
 # CUDA settings
 use_cuda = torch.cuda.is_available()
 torch.cuda.set_device(0)
-
-
-def getDataset(dataset):
-    transform = transforms.Compose([
-        transforms.RandomHorizontalFlip(),
-        transforms.RandomRotation(10),
-        transforms.ToTensor(),
-        ])
-
-    if(dataset == 'CIFAR10'):
-        trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
-        testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
-        num_classes = 10
-        inputs=3
-
-    elif(dataset == 'CIFAR100'):
-        trainset = torchvision.datasets.CIFAR100(root='./data', train=True, download=True, transform=transform)
-        testset = torchvision.datasets.CIFAR100(root='./data', train=False, download=True, transform=transform)
-        num_classes = 100
-        inputs = 3
-        
-    elif(dataset == 'MNIST'):
-        trainset = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=transform)
-        testset = torchvision.datasets.MNIST(root='./data', train=False, download=True, transform=transform)
-        num_classes = 10
-        inputs = 1
-
-    return trainset, testset, inputs, num_classes
-
-def getDataloader(trainset, testset, valid_size, batch_size, num_workers):
-    num_train = len(trainset)
-    indices = list(range(num_train))
-    np.random.shuffle(indices)
-    split = int(np.floor(valid_size * num_train))
-    train_idx, valid_idx = indices[split:], indices[:split]
-
-    train_sampler = SubsetRandomSampler(train_idx)
-    valid_sampler = SubsetRandomSampler(valid_idx)
-
-    train_loader = torch.utils.data.DataLoader(trainset, batch_size=batch_size,
-        sampler=train_sampler, num_workers=num_workers)
-    valid_loader = torch.utils.data.DataLoader(trainset, batch_size=batch_size, 
-        sampler=valid_sampler, num_workers=num_workers)
-    test_loader = torch.utils.data.DataLoader(testset, batch_size=batch_size, 
-        num_workers=num_workers)
-
-    return train_loader, valid_loader, test_loader
 
 
 def getModel(net_type, inputs, outputs, IS_BAYESIAN):
@@ -162,8 +113,8 @@ def run(dataset, net_type, IS_BAYESIAN):
     valid_size = cfg.valid_size
     batch_size = cfg.batch_size
 
-    trainset, testset, inputs, outputs = getDataset(dataset)
-    train_loader, valid_loader, test_loader = getDataloader(
+    trainset, testset, inputs, outputs = data.getDataset(dataset)
+    train_loader, valid_loader, test_loader = data.getDataloader(
         trainset, testset, valid_size, batch_size, num_workers)
     net = getModel(net_type, inputs, outputs, IS_BAYESIAN)
 
