@@ -29,7 +29,7 @@ class TestModelForwardpass:
         batch_size = np.random.randint(1, 256)
         batch = torch.randn((batch_size, 3, 32, 32))
         net = model(10, 3)
-        out = net.probforward(batch)
+        out = net(batch)
         assert out[0].shape[0]==batch_size
 
     @pytest.mark.parametrize("model", non_bayesian_models)
@@ -49,7 +49,7 @@ class TestModelForwardpass:
         if cuda_available:
             net = net.cuda()
             batch = batch.cuda()
-        out = net.probforward(batch)
+        out = net(batch)
         assert out[0].shape[0]==batch_size
 
     @pytest.mark.skipif(not cuda_available, reason="CUDA not available")
