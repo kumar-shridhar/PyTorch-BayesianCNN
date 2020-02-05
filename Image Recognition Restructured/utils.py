@@ -20,3 +20,14 @@ def get_beta(batch_idx, m, beta_type):
 def elbo(out, y, kl, beta):
     loss = F.cross_entropy(out, y)
     return loss + beta * kl
+
+
+def str2bool(v):
+    if isinstance(v, bool):
+       return v
+    if v.lower() in ('yes', 'true', 't', 'y', '1'):
+        return True
+    elif v.lower() in ('no', 'false', 'f', 'n', '0'):
+        return False
+    else:
+        raise argparse.ArgumentTypeError('Boolean value expected.')

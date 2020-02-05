@@ -228,8 +228,10 @@ def run(dataset, net_type, IS_BAYESIAN):
 
 
 if __name__ == '__main__':
-    IS_BAYESIAN = True
-    dataset = 'CIFAR10'
-    net_type = 'alexnet'
+    parser = argparse.ArgumentParser(description = "PyTorch Bayesian and Frequentist Model Training")
+    parser.add_argument('--net_type', default='alexnet', type=str, help='model')
+    parser.add_argument('--dataset', default='CIFAR10', type=str, help='dataset = [MNIST/CIFAR10/CIFAR100]')
+    parser.add_argument('--IS_BAYESIAN', default=True, type=utils.str2bool, help='model_type - bayesian/frequentist')
+    args = parser.parse_args()
 
-    run(dataset, net_type, IS_BAYESIAN)
+    run(args.dataset, args.net_type, args.IS_BAYESIAN)
