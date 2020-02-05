@@ -183,9 +183,14 @@ def run(dataset, net_type, IS_BAYESIAN):
     net = getModel(net_type, inputs, outputs, IS_BAYESIAN)
 
     if IS_BAYESIAN:
-        ckpt_name = f'model_{net_type}_{dataset}_bayesian.pt'
+        ckpt_dir = f'checkpoints/{dataset}/bayesian'
+        ckpt_name = f'checkpoints/{dataset}/bayesian/model_{net_type}.pt'
     else:
-        ckpt_name = f'model_{net_type}_{dataset}_frequentist.pt'
+        ckpt_dir = f'checkpoints/{dataset}/frequentist'
+        ckpt_name = f'checkpoints/{dataset}/frequentist/model_{net_type}.pt'
+    if not os.path.exists(ckpt_dir):
+        os.makedirs(ckpt_dir, exist_ok=True)
+
     if use_cuda:
         net.cuda()
 
