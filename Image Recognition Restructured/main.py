@@ -22,6 +22,7 @@ from torchvision import datasets
 from torch.utils.data.sampler import SubsetRandomSampler
 
 import utils
+import config as cfg
 from models.BayesianModels.Bayesian3Conv3FC import BBB3Conv3FC
 from models.BayesianModels.BayesianAlexNet import BBBAlexNet
 from models.BayesianModels.BayesianLeNet import BBBLeNet
@@ -167,16 +168,14 @@ def valid_frequentist(net, criterion, valid_loader):
 def run(dataset, net_type, IS_BAYESIAN):
 
     # Hyper Parameter settings
-    n_epochs = 150
-    lr = 0.01
-    weight_decay = 0.0005
-    num_samples = 1
-    beta_type = "Standard"
-    resize=32
-    num_workers = 0
-    valid_size = 0.2
-    batch_size = 256
-    num_workers = 4
+    n_epochs = cfg.n_epochs
+    lr = cfg.lr
+    weight_decay = cfg.weight_decay
+    beta_type = cfg.beta_type
+    resize = cfg.resize
+    num_workers = cfg.num_workers
+    valid_size = cfg.valid_size
+    batch_size = cfg.batch_size
 
     trainset, testset, inputs, outputs = getDataset(dataset)
     train_loader, valid_loader, test_loader = getDataloader(
