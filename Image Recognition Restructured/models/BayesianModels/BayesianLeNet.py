@@ -1,8 +1,8 @@
 import math
 import torch.nn as nn
 from layers.BBBConv import BBBConv2d
-from layers.BBBLinear import  BBBLinearFactorial
-from layers.misc import FlattenLayer
+from layers.BBBLinear import  BBBLinear
+from layers.misc import FlattenLayer, ModuleWrapper
 
 
 class BBBLeNet(nn.Module):
@@ -51,3 +51,35 @@ class BBBLeNet(nn.Module):
                 x = layer(x)
         logits = x
         return logits, kl
+
+
+class LeNet5(ModuleWrapper):
+    
+    def __init__(self):
+        super(LeNet5, self).__init__()
+        self.num_classes = 10
+
+        nonlinearity = nn.ReLU
+
+        # Conv-BN-Tanh-Pool
+        self.conv1 = BBBConv2d(1, 20, 5, alpha_shape=(1,1), padding=0, bias=False)
+  
+        self.bn1 = nn.BatchNorm2d(20)
+        self.relu1 = nonlinearity()
+        self.pool1 = nn.MaxPool2d(2, padding=0)
+
+        self.conv2 = BBBConv2d(20, 50, 5, alpha_shape=(1,1), padding=0, bias=False)
+        self.bn2 = nn.BatchNorm2d(50)
+        self.relu2 = nonlinearity()
+        self.pool2 = nn.MaxPool2d(2, padding=0)
+
+        self.flatten = FlattenLayer(800)
+
+        self.dense1 = BBBLinear(800, 500, alpha_shape=(1,1), bias=False)
+        self.bn3 = nn.BatchNorm1d(500)
+        self.relu3 = nonlinearity()
+
+        self.dense2 = BBBLinear(500, 10, alpha_shape=(1,1), bias=False)
+
+
+net=LeNet5()

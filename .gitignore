@@ -5,3 +5,4 @@ checkpoint_/
 *.pyc
 **/.ipynb_checkpoints
 *.pt
+**/logs
