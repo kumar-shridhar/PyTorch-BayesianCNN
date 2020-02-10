@@ -2,7 +2,6 @@ import numpy as np
 import torch.nn.functional as F
 from torch import nn
 import torch
-from torch.autograd import Variable
 
 
 class ELBO(nn.Module):

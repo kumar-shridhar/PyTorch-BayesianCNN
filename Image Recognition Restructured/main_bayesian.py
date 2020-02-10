@@ -6,7 +6,6 @@ import argparse
 
 import torch
 import numpy as np
-import torch.nn as nn
 from torch.optim import Adam
 from torch.autograd import Variable
 from torch.nn import functional as F

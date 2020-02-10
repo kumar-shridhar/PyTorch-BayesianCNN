@@ -9,7 +9,6 @@ import torch.nn as nn
 from torch.optim import Adam
 
 import data
-import utils
 import config_frequentist as cfg
 from models.NonBayesianModels.AlexNet import AlexNet
 from models.NonBayesianModels.LeNet import LeNet
