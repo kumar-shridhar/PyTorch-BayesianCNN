@@ -6,7 +6,6 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import Parameter
-from torch.autograd import Variable
 
 import metrics
 from .misc import ModuleWrapper
@@ -45,7 +44,7 @@ class BBBLinear(ModuleWrapper):
 
         lrt_std = torch.sqrt(1e-16 + F.linear(x * x, sigma2))
         if self.training:
-            eps = Variable(lrt_std.data.new(lrt_std.size()).normal_())
+            eps = lrt_std.data.new(lrt_std.size()).normal_()
         else:
             eps = 0.0
         return lrt_mean + lrt_std * eps

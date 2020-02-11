@@ -15,8 +15,7 @@ from models.NonBayesianModels.LeNet import LeNet
 from models.NonBayesianModels.ThreeConvThreeFC import ThreeConvThreeFC
 
 # CUDA settings
-use_cuda = torch.cuda.is_available()
-torch.cuda.set_device(0)
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
 def getModel(net_type, inputs, outputs):
@@ -30,12 +29,11 @@ def getModel(net_type, inputs, outputs):
         raise ValueError('Network should be either [LeNet / AlexNet / 3Conv3FC')
 
 
-def train(net, optimizer, criterion, train_loader):
+def train_model(net, optimizer, criterion, train_loader):
     train_loss = 0.0
     net.train()
     for data, target in train_loader:
-        if use_cuda:
-            data, target = data.cuda(), target.cuda()
+        data, target = data.to(device), target.to(device)
         optimizer.zero_grad()
         output = net(data)
         loss = criterion(output, target)
@@ -45,12 +43,11 @@ def train(net, optimizer, criterion, train_loader):
     return train_loss
 
 
-def valid(net, criterion, valid_loader):
+def validate_model(net, criterion, valid_loader):
     valid_loss = 0.0
     net.eval()
     for data, target in valid_loader:
-        if use_cuda:
-            data, target = data.cuda(), target.cuda()
+        data, target = data.to(device), target.to(device)
         output = net(data)
         loss = criterion(output, target)
         valid_loss += loss.item()*data.size(0)
@@ -70,7 +67,7 @@ def run(dataset, net_type):
     trainset, testset, inputs, outputs = data.getDataset(dataset)
     train_loader, valid_loader, test_loader = data.getDataloader(
         trainset, testset, valid_size, batch_size, num_workers)
-    net = getModel(net_type, inputs, outputs)
+    net = getModel(net_type, inputs, outputs).to(device)
 
     ckpt_dir = f'checkpoints/{dataset}/frequentist'
     ckpt_name = f'checkpoints/{dataset}/frequentist/model_{net_type}.pt'
@@ -78,15 +75,12 @@ def run(dataset, net_type):
     if not os.path.exists(ckpt_dir):
         os.makedirs(ckpt_dir, exist_ok=True)
 
-    if use_cuda:
-        net.cuda()
-
     criterion = nn.CrossEntropyLoss()
     optimizer = Adam(net.parameters(), lr=lr)
     valid_loss_min = np.Inf
     for epoch in range(1, n_epochs+1):
-        train_loss = train(net, optimizer, criterion, train_loader)
-        valid_loss = valid(net, criterion, valid_loader)
+        train_loss = train_model(net, optimizer, criterion, train_loader)
+        valid_loss = validate_model(net, criterion, valid_loader)
 
         train_loss = train_loss/len(train_loader.dataset)
         valid_loss = valid_loss/len(valid_loader.dataset)
