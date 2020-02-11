@@ -55,10 +55,10 @@ class Net(ModuleWrapper):
     self.flatten = FlattenLayer(800)
     self.fc = BBBLinear(800, 10, alpha_shape=(1,1))
 ```
+
 #### Notes: 
 1. You need to add `FlattenLayer` after convolutional block.  
 2. `forward` method of the model will return a tuple as `(logits, kl)`.
-
 
 ### Filter weight distributions in a Bayesian Vs Frequentist approach
 
