@@ -1,41 +1,22 @@
 # Bayesian CNN with Variational Inference for Image Recognition task
 
-We introduce **Bayesian convolutional neural networks with variational inference**, a variant of convolutional neural networks (CNNs), in which the intractable posterior probability distributions over weights are inferred by **Bayes by Backprop**. We demonstrate how our proposed variational inference method achieves performances equivalent to frequentist inference in identical architectures on several datasets (MNIST, CIFAR10, CIFAR100).
+We introduce **Bayesian convolutional neural networks with variational inference**, a variant of convolutional neural networks (CNNs), in which the intractable posterior probability distributions over weights are inferred by **Bayes by Backprop**. We demonstrate how our proposed variational inference method achieves performances equivalent to frequentist inference in identical architectures on several datasets (MNIST, CIFAR10, CIFAR100) as described in the [paper](https://arxiv.org/abs/1901.02731).
 
 ---------------------------------------------------------------------------------------------------------
 
 
-### Directory Structure:
-`layers/`:  Contains ModuleWrapper, FlattenLayer, Bayesian layers (BBBConv2d and BBBLinear).  
-`models/BayesianModels/`: Contains standard Bayesian models (BBBLeNet, BBBAlexNet, BBB3Conv3FC).  
-`models/NonBayesianModels/`: Contains standard Non-Bayesian models (LeNet, AlexNet).  
-`checkpoints/`: Checkpoint directory for the best model will be saved here.  
-`tests/`: Basic unittest cases for layers and models.  
-`main_bayesian.py`: Train and Evaluate Bayesian models.  
-`config_bayesian.py`: Hyperparameters for `main_bayesian` file.  
-`main_frequentist.py`: Train and Evaluate non-Bayesian (Frequentist) models.  
-`config_frequentist.py`: Hyperparameters for `main_frequentist` file. 
+### Filter weight distributions in a Bayesian Vs Frequentist approach
+
+![Distribution over weights in a CNN's filter.](experiments/figures/BayesCNNwithdist.png)
 
 ---------------------------------------------------------------------------------------------------------
 
+### Fully Bayesian perspective of an entire CNN 
 
-### How to perform standard experiments?
-Currently, following datasets and models are supported.  
-* Datasets: MNIST, CIFAR10, CIFAR100  
-* Models: AlexNet, LeNet, 3Conv3FC  
-
-#### Bayesian
-
-`python main_bayesian.py`
-set hyperparameters in `config_bayesian.py`
-
-
-#### Bayesian
-
-`python main_frequentist.py`
-set hyperparameters in `config_frequentist.py`
+![Distributions must be over weights in convolutional layers and weights in fully-connected layers.](experiments/figures/CNNwithdist_git.png)
 
 ---------------------------------------------------------------------------------------------------------
+
 
 
 ### Make your custom Bayesian Network?
@@ -79,19 +60,40 @@ class Net(ModuleWrapper):
 
 ---------------------------------------------------------------------------------------------------------
 
+### How to perform standard experiments?
+Currently, following datasets and models are supported.  
+* Datasets: MNIST, CIFAR10, CIFAR100  
+* Models: AlexNet, LeNet, 3Conv3FC  
+
+#### Bayesian
+
+`python main_bayesian.py`
+* set hyperparameters in `config_bayesian.py`
 
 
-### Filter weight distributions in a Bayesian Vs Frequentist approach
+#### Bayesian
 
-![Distribution over weights in a CNN's filter.](experiments/figures/BayesCNNwithdist.png)
+`python main_frequentist.py`
+* set hyperparameters in `config_frequentist.py`
 
 ---------------------------------------------------------------------------------------------------------
 
-### Fully Bayesian perspective of an entire CNN 
 
-![Distributions must be over weights in convolutional layers and weights in fully-connected layers.](experiments/figures/CNNwithdist_git.png)
+
+### Directory Structure:
+`layers/`:  Contains ModuleWrapper, FlattenLayer, Bayesian layers (BBBConv2d and BBBLinear).  
+`models/BayesianModels/`: Contains standard Bayesian models (BBBLeNet, BBBAlexNet, BBB3Conv3FC).  
+`models/NonBayesianModels/`: Contains standard Non-Bayesian models (LeNet, AlexNet).  
+`checkpoints/`: Checkpoint directory for the best model will be saved here.  
+`tests/`: Basic unittest cases for layers and models.  
+`main_bayesian.py`: Train and Evaluate Bayesian models.  
+`config_bayesian.py`: Hyperparameters for `main_bayesian` file.  
+`main_frequentist.py`: Train and Evaluate non-Bayesian (Frequentist) models.  
+`config_frequentist.py`: Hyperparameters for `main_frequentist` file. 
 
 ---------------------------------------------------------------------------------------------------------
+
+
 
 
 
