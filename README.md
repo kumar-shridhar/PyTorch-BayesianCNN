@@ -71,7 +71,7 @@ Currently, following datasets and models are supported.
 * set hyperparameters in `config_bayesian.py`
 
 
-#### Bayesian
+#### Frequentist
 
 `python main_frequentist.py`
 * set hyperparameters in `config_frequentist.py`

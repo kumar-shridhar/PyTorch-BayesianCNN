@@ -1,5 +1,5 @@
 ############### Configuration file for Bayesian ###############
-n_epochs = 150
+n_epochs = 50
 lr_start = 0.001
 num_workers = 4
 valid_size = 0.2
