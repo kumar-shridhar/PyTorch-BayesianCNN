@@ -24,8 +24,16 @@ non_bayesian_models = [LeNet, AlexNet, ThreeConvThreeFC]
 
 class TestModelForwardpass:
 
-    @pytest.mark.parametrize("model", bayesian_models + non_bayesian_models)
-    def test_cpu(self, model):
+    @pytest.mark.parametrize("model", bayesian_models)
+    def test_cpu_bayesian(self, model):
+        batch_size = np.random.randint(1, 256)
+        batch = torch.randn((batch_size, 3, 32, 32))
+        net = model(10, 3)
+        out = net(batch)
+        assert out[0].shape[0]==batch_size
+    
+    @pytest.mark.parametrize("model", non_bayesian_models)
+    def test_cpu_frequentist(self, model):
         batch_size = np.random.randint(1, 256)
         batch = torch.randn((batch_size, 3, 32, 32))
         net = model(10, 3)
@@ -33,8 +41,20 @@ class TestModelForwardpass:
         assert out.shape[0]==batch_size
 
     @pytest.mark.skipif(not cuda_available, reason="CUDA not available")
-    @pytest.mark.parametrize("model", bayesian_models + non_bayesian_models)
-    def test_gpu(self, model):
+    @pytest.mark.parametrize("model", bayesian_models)
+    def test_gpu_bayesian(self, model):
+        batch_size = np.random.randint(1, 256)
+        batch = torch.randn((batch_size, 3, 32, 32))
+        net = model(10, 3)
+        if cuda_available:
+            net = net.cuda()
+            batch = batch.cuda()
+        out = net(batch)
+        assert out[0].shape[0]==batch_size
+
+    @pytest.mark.skipif(not cuda_available, reason="CUDA not available")
+    @pytest.mark.parametrize("model", non_bayesian_models)
+    def test_gpu_frequentist(self, model):
         batch_size = np.random.randint(1, 256)
         batch = torch.randn((batch_size, 3, 32, 32))
         net = model(10, 3)
