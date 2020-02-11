@@ -5,25 +5,13 @@ import torch
 
 
 class ELBO(nn.Module):
-    def __init__(self, net, train_size):
+    def __init__(self, train_size):
         super(ELBO, self).__init__()
         self.train_size = train_size
-        self.net = net
 
-    def forward(self, input, target, kl_weight=1.0):
+    def forward(self, input, target, kl, kl_weight=1.0):
         assert not target.requires_grad
-        kl = 0.0
-        for module in self.net.modules():
-            if hasattr(module, 'kl_reg'):
-                kl = kl + module.kl_reg()
         return F.cross_entropy(input, target, size_average=True) * self.train_size + kl_weight * kl
-
-    def get_kl(self):
-        kl = 0.0
-        for module in self.net.modules():
-            if hasattr(module, 'kl_reg'):
-                kl = kl + module.kl_reg()
-        return kl
 
 
 def lr_linear(epoch_num, decay_start, total_epochs, start_value):

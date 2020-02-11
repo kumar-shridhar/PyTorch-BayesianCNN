@@ -16,7 +16,13 @@ class ModuleWrapper(nn.Module):
     def forward(self, x):
         for module in self.children():
             x = module(x)
-        return x
+
+        kl = 0.0
+        for module in self.modules():
+            if hasattr(module, 'kl_reg'):
+                kl = kl + module.kl_reg()
+
+        return x, kl
 
 
 class Abs(ModuleWrapper):
