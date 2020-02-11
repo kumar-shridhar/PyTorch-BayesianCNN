@@ -1,29 +1,46 @@
 # Bayesian CNN with Variational Inference for Image Recognition task
 
-We introduce **Bayesian convolutional neural networks with variational inference**, a variant of convolutional neural networks (CNNs), in which the intractable posterior probability distributions over weights are inferred by **Bayes by Backprop**. We demonstrate how our proposed variational inference method achieves performances equivalent to frequentist inference in identical architectures on several datasets (MNIST, CIFAR10, CIFAR100), while the two desiderata, a measure for uncertainty and regularization are incorporated naturally. We examine in detail how this measure for uncertainty, namely the predictive variance, can be decomposed into aleatoric and epistemic uncertainties. 
+We introduce **Bayesian convolutional neural networks with variational inference**, a variant of convolutional neural networks (CNNs), in which the intractable posterior probability distributions over weights are inferred by **Bayes by Backprop**. We demonstrate how our proposed variational inference method achieves performances equivalent to frequentist inference in identical architectures on several datasets (MNIST, CIFAR10, CIFAR100).
 
 ---------------------------------------------------------------------------------------------------------
 
+
 ### Directory Structure:
 `layers/`:  Contains ModuleWrapper, FlattenLayer, Bayesian layers (BBBConv2d and BBBLinear).  
-`models/BayesianModels/`: Contains standard Bayesian models (BBBLeNet, BBBAlexNet).  
+`models/BayesianModels/`: Contains standard Bayesian models (BBBLeNet, BBBAlexNet, BBB3Conv3FC).  
 `models/NonBayesianModels/`: Contains standard Non-Bayesian models (LeNet, AlexNet).  
-`checkpoints/`: Here your models will be stored.  
-`tests/`: Contains some basic unittests for layers and models.  
-`main_bayesian.py`: Contains actual procedure of training and evaluating bayesian models.  
-`config_bayesian.py`: Contains Hyperparameters for `main_bayesian`.  
-`main_frequentist.py`: Contains actual procedure of training and evaluating non-bayesian models.  
-`config_frequentist.py`: Contains Hyperparameters for `main_frequentist`. 
+`checkpoints/`: Checkpoint directory for the best model will be saved here.  
+`tests/`: Basic unittest cases for layers and models.  
+`main_bayesian.py`: Train and Evaluate Bayesian models.  
+`config_bayesian.py`: Hyperparameters for `main_bayesian` file.  
+`main_frequentist.py`: Train and Evaluate non-Bayesian (Frequentist) models.  
+`config_frequentist.py`: Hyperparameters for `main_frequentist` file. 
+
+---------------------------------------------------------------------------------------------------------
+
 
 ### How to perform standard experiments?
 Currently, following datasets and models are supported.  
-Datasets: MNIST, CIFAR10, CIFAR100  
-Models: AlexNet, LeNet, 3conv3fc  
+* Datasets: MNIST, CIFAR10, CIFAR100  
+* Models: AlexNet, LeNet, 3Conv3FC  
 
-In order to start experiment, set hyperparameters in `config_bayesian.py` or `config_frequentist.py` and run `main_bayesian.py` or `main_frequentist.py` accordingly.  
+#### Bayesian
 
-### How to make a custom model?
-To make a custom model, you just need to inherit `layers.misc.ModuleWrapper` instead of `torch.nn.Module` and use `layers.BBBLinear.BBBLinear` and `layers.BBBConv.BBBConv2d` instead of `torch.nn.Conv2d` and `torch.nn.Linear`. Moreover, you don't need to define `forward` method. It'll be automatically be taken care of.  
+`python main_bayesian.py`
+set hyperparameters in `config_bayesian.py`
+
+
+#### Bayesian
+
+`python main_frequentist.py`
+set hyperparameters in `config_frequentist.py`
+
+---------------------------------------------------------------------------------------------------------
+
+
+### Make your custom Bayesian Network?
+To make a custom Bayesian Network, inherit `layers.misc.ModuleWrapper` instead of `torch.nn.Module` and use `layers.BBBLinear.BBBLinear` and `layers.BBBConv.BBBConv2d` instead of `torch.nn.Conv2d` and `torch.nn.Linear`. Moreover, no don't need to define `forward` method. It'll be automatically be taken care of. 
+
 For example:  
 ```python
 class Net(nn.Module):
@@ -43,7 +60,7 @@ class Net(nn.Module):
     x = self.fc(x)
     return x
 ```
-An example of model given above can be converted to Bayesian as follows:
+Above Network can be converted to Bayesian as follows:
 ```python
 class Net(ModuleWrapper):
 
@@ -57,8 +74,12 @@ class Net(ModuleWrapper):
 ```
 
 #### Notes: 
-1. You need to add `FlattenLayer` after convolutional block.  
+1. Add `FlattenLayer` before first `BBBLinear` block.  
 2. `forward` method of the model will return a tuple as `(logits, kl)`.
+
+---------------------------------------------------------------------------------------------------------
+
+
 
 ### Filter weight distributions in a Bayesian Vs Frequentist approach
 
@@ -72,40 +93,16 @@ class Net(ModuleWrapper):
 
 ---------------------------------------------------------------------------------------------------------
 
-## Results 
-
-### Results on MNIST and CIFAR 10 dataset
-
-![Table showing MNIST and CIFAR10 results](experiments/figures/CIFAR10MNISTTable.png)
-
-![Result on MNIST dataset with AlexNet and LeNet](experiments/results/plots/results_mnist.png)
-
-![Result on CIFAR10 dataset with AlexNet and LeNet](experiments/results/plots/results_cifar10.png)
-
----------------------------------------------------------------------------------------------------------
-
-
-### Results on CIFAR100 dataset
-
-![Table showing CIFAR100 results](experiments/figures/CIFAR100Table.png)
-
-![Result on CIFAR100 dataset with AlexNet and LeNet](experiments/results/plots/results_cifar100.png)
-
---------------------------------------------------------------------------------------------------------
-
-### Uncertainty Estimation
-
-![Uncertainty Estimation on LeNet5](experiments/figures/Uncertainty.png)
 
 
 If you are using this work, please cite:
 
 ```
-@article{shridhar2018bayesian,
-  title={Bayesian Convolutional Neural Networks with Variational Inference},
-  author={Shridhar, Kumar and Laumann, Felix and Llopart Maurin, Adrian and Olsen, Martin and Liwicki, Marcus},
-  journal={arXiv preprint arXiv:1806.05978},
-  year={2018}
+@article{shridhar2019comprehensive,
+  title={A comprehensive guide to bayesian convolutional neural network with variational inference},
+  author={Shridhar, Kumar and Laumann, Felix and Liwicki, Marcus},
+  journal={arXiv preprint arXiv:1901.02731},
+  year={2019}
 }
 ```
 
