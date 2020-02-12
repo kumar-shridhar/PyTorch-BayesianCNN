@@ -20,7 +20,7 @@ We introduce **Bayesian convolutional neural networks with variational inference
 
 
 ### Make your custom Bayesian Network?
-To make a custom Bayesian Network, inherit `layers.misc.ModuleWrapper` instead of `torch.nn.Module` and use `layers.BBBLinear.BBBLinear` and `layers.BBBConv.BBBConv2d` instead of `torch.nn.Conv2d` and `torch.nn.Linear`. Moreover, no don't need to define `forward` method. It'll be automatically be taken care of. 
+To make a custom Bayesian Network, inherit `layers.misc.ModuleWrapper` instead of `torch.nn.Module` and use `layers.BBBLinear.BBBLinear` and `layers.BBBConv.BBBConv2d` instead of `torch.nn.Conv2d` and `torch.nn.Linear`. Moreover, no need to define `forward` method. It'll automatically be taken care of. 
 
 For example:  
 ```python
