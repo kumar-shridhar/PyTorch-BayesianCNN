@@ -48,7 +48,6 @@ def train_model(net, optimizer, criterion, trainloader, num_ens=1):
             kl += _kl
             outputs[:, :, j] = F.log_softmax(net_out, dim=1)
         
-        
         kl = kl / num_ens
         kl_list.append(kl.item())
         log_outputs = utils.logmeanexp(outputs, dim=2)
@@ -131,5 +130,13 @@ if __name__ == '__main__':
     parser.add_argument('--net_type', default='lenet', type=str, help='model')
     parser.add_argument('--dataset', default='MNIST', type=str, help='dataset = [MNIST/CIFAR10/CIFAR100]')
     args = parser.parse_args()
+
+    if cfg.record_mean_var:
+        mean_var_dir = f"checkpoints/{args.dataset}/bayesian/{args.net_type}/"
+        cfg.mean_var_dir = mean_var_dir
+        if not os.path.exists(mean_var_dir):
+            os.makedirs(mean_var_dir, exist_ok=True)
+        for file in os.listdir(mean_var_dir):
+            os.remove(mean_var_dir + file)
 
     run(args.dataset, args.net_type)

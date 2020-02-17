@@ -7,13 +7,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import Parameter
 
+import utils
 import metrics
+import config_bayesian as cfg
 from .misc import ModuleWrapper
 
 
 class BBBLinear(ModuleWrapper):
     
-    def __init__(self, in_features, out_features, alpha_shape=(1, 1), bias=True):
+    def __init__(self, in_features, out_features, alpha_shape=(1, 1), bias=True, name='BBBLinear'):
         super(BBBLinear, self).__init__()
         self.in_features = in_features
         self.out_features = out_features
@@ -26,6 +28,8 @@ class BBBLinear(ModuleWrapper):
             self.register_parameter('bias', None)
         self.reset_parameters()
         self.kl_value = metrics.calculate_kl
+        if cfg.record_mean_var:
+            self.mean_var_path = cfg.mean_var_dir + f"{name}.txt"
 
     def reset_parameters(self):
         stdv = 1. / math.sqrt(self.W.size(1))
@@ -49,6 +53,10 @@ class BBBLinear(ModuleWrapper):
             epsilon = 0.0
         # Local reparameterization trick
         out = mean + std * epsilon
+
+        if cfg.record_mean_var:
+            utils.save_array_to_file(mean.cpu().detach().numpy(), self.mean_var_path, "mean")
+            utils.save_array_to_file(std.cpu().detach().numpy(), self.mean_var_path, "std")
 
         return out
 

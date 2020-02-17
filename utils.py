@@ -30,3 +30,12 @@ def adjust_learning_rate(optimizer, lr):
     """Sets the learning rate to the initial LR decayed by 10 every 30 epochs"""
     for param_group in optimizer.param_groups:
         param_group['lr'] = lr
+
+
+def save_array_to_file(numpy_array, filename, array_type):
+    file = open(filename, 'a')
+    shape = " ".join(map(str, numpy_array.shape))
+    file.write(f"{array_type}${shape}\n")
+    np.savetxt(file, numpy_array.flatten(), newline=" ", fmt="%.3f")
+    file.write("\n")
+    file.close()

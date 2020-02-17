@@ -7,14 +7,16 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import Parameter
 
+import utils
 import metrics
+import config_bayesian as cfg
 from .misc import ModuleWrapper
 
 
 class BBBConv2d(ModuleWrapper):
     
     def __init__(self, in_channels, out_channels, kernel_size, alpha_shape, stride=1,
-                 padding=0, dilation=1, bias=True):
+                 padding=0, dilation=1, bias=True, name='BBBConv2d'):
         super(BBBConv2d, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -34,6 +36,8 @@ class BBBConv2d(ModuleWrapper):
         self.out_nobias = lambda input, kernel: F.conv2d(input, kernel, None, self.stride, self.padding, self.dilation, self.groups)
         self.log_alpha = Parameter(torch.Tensor(*alpha_shape))
         self.reset_parameters()
+        if cfg.record_mean_var:
+            self.mean_var_path = cfg.mean_var_dir + f"{name}.txt"
 
     def reset_parameters(self):
         n = self.in_channels
@@ -59,6 +63,10 @@ class BBBConv2d(ModuleWrapper):
 
         # Local reparameterization trick
         out = mean + std * epsilon
+        
+        if cfg.record_mean_var:
+            utils.save_array_to_file(mean.cpu().detach().numpy(), self.mean_var_path, "mean")
+            utils.save_array_to_file(std.cpu().detach().numpy(), self.mean_var_path, "std")
 
         return out
 
