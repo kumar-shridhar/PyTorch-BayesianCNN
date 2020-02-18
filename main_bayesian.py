@@ -36,7 +36,14 @@ def train_model(net, optimizer, criterion, trainloader, num_ens=1):
     training_loss = 0.0
     accs = []
     kl_list = []
+    freq = cfg.recording_freq_per_epoch
+    freq = len(trainloader)//freq
     for i, (inputs, labels) in enumerate(trainloader, 0):
+        if i%freq==0:
+            cfg.record_now = True
+        else:
+            cfg.record_now = False
+
         optimizer.zero_grad()
 
         inputs, labels = inputs.to(device), labels.to(device)
@@ -110,6 +117,7 @@ def run(dataset, net_type):
     optimizer = Adam(net.parameters(), lr=lr_start)
     valid_loss_max = np.Inf
     for epoch in range(n_epochs):  # loop over the dataset multiple times
+        cfg.epoch_no = epoch
         utils.adjust_learning_rate(optimizer, metrics.lr_linear(epoch, 0, n_epochs, lr_start))
 
         train_loss, train_acc, train_kl = train_model(net, optimizer, criterion, train_loader, num_ens=train_ens)

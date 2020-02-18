@@ -32,10 +32,10 @@ def adjust_learning_rate(optimizer, lr):
         param_group['lr'] = lr
 
 
-def save_array_to_file(numpy_array, filename, array_type):
+def save_array_to_file(numpy_array, filename, array_type, epoch_no):
     file = open(filename, 'a')
     shape = " ".join(map(str, numpy_array.shape))
-    file.write(f"{array_type}${shape}\n")
+    file.write(f"{array_type}${shape}${epoch_no}\n")
     np.savetxt(file, numpy_array.flatten(), newline=" ", fmt="%.3f")
     file.write("\n")
     file.close()
