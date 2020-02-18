@@ -39,3 +39,27 @@ def save_array_to_file(numpy_array, filename, array_type, epoch_no):
     np.savetxt(file, numpy_array.flatten(), newline=" ", fmt="%.3f")
     file.write("\n")
     file.close()
+
+
+def load_mean_std_from_file(filename):
+    file = open(filename, 'r')
+    means = []
+    stds = []
+    freq_per_epoch = 0
+    while True:
+        desc = file.readline()
+        str_array = file.readline()
+        if desc=="":
+            file.close()
+            return means, stds, freq_per_epoch//2
+
+        array_type, shape, epoch_no = desc.strip().split('$')
+        epoch_no = int(epoch_no)
+        if epoch_no==0:
+            freq_per_epoch += 1
+        shape = np.fromstring(shape, sep=' ', dtype=np.int64)
+        numpy_array = np.fromstring(str_array, sep=' ').reshape(shape)
+        if array_type=="mean":
+            means.append(numpy_array)
+        else:
+            stds.append(numpy_array)
