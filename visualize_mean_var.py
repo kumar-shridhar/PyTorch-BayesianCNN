@@ -14,12 +14,14 @@ def plot_dist(file, type, node_no):
     else:
         data = stds
 
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
     for i in range(len(data)):
         sample = data[i].reshape((cfg.batch_size, -1))
-        sns.kdeplot(sample[:, node_no])
+        sns.kdeplot(sample[:, node_no], ax=ax)
         plt.show(block=False)
-        plt.pause(2)
-        plt.close()
+        plt.pause(0.5)
+        ax.clear()
 
 
 def plot_line(file, type, node_no):
