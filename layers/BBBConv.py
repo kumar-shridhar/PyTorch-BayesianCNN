@@ -36,8 +36,9 @@ class BBBConv2d(ModuleWrapper):
         self.out_nobias = lambda input, kernel: F.conv2d(input, kernel, None, self.stride, self.padding, self.dilation, self.groups)
         self.log_alpha = Parameter(torch.Tensor(*alpha_shape))
         self.reset_parameters()
+        self.name = name
         if cfg.record_mean_var:
-            self.mean_var_path = cfg.mean_var_dir + f"{name}.txt"
+            self.mean_var_path = cfg.mean_var_dir + f"{self.name}.txt"
 
     def reset_parameters(self):
         n = self.in_channels
@@ -64,7 +65,7 @@ class BBBConv2d(ModuleWrapper):
         # Local reparameterization trick
         out = mean + std * epsilon
         
-        if cfg.record_mean_var and cfg.record_now:
+        if cfg.record_mean_var and cfg.record_now and self.name in cfg.record_layers:
             utils.save_array_to_file(mean.cpu().detach().numpy(), self.mean_var_path, "mean", cfg.epoch_no)
             utils.save_array_to_file(std.cpu().detach().numpy(), self.mean_var_path, "std", cfg.epoch_no)
 
