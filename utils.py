@@ -1,3 +1,4 @@
+import os
 import torch
 import numpy as np
 
@@ -45,21 +46,67 @@ def load_mean_std_from_file(filename):
     file = open(filename, 'r')
     means = []
     stds = []
-    freq_per_epoch = 0
     while True:
         desc = file.readline()
         str_array = file.readline()
         if desc=="":
             file.close()
-            return means, stds, freq_per_epoch//2
+            return means, stds
 
-        array_type, shape, epoch_no = desc.strip().split('$')
-        epoch_no = int(epoch_no)
-        if epoch_no==0:
-            freq_per_epoch += 1
+        array_type, shape, _ = desc.strip().split('$')
         shape = np.fromstring(shape, sep=' ', dtype=np.int64)
         numpy_array = np.fromstring(str_array, sep=' ').reshape(shape)
         if array_type=="mean":
             means.append(numpy_array)
         else:
             stds.append(numpy_array)
+
+
+def get_file_info(filename):
+    file = open(filename, 'r')
+    file_desc = {
+        'layer_name': None,
+        'batch_size': None,
+        'original_shape': None,
+        'number_of_nodes': None,
+        'number_of_epochs': None,
+        'recording_frequency_per_epoch': None
+    }
+
+    path_desc = filename.split('/')
+    file_desc['layer_name'] = path_desc[-1][:-4]
+
+    shape = file.readline().strip().split('$')[1]
+    shape = np.fromstring(shape, sep=' ', dtype=np.int64)
+    file_desc['original_shape'] = shape
+    file_desc['batch_size'] = shape[0]
+    file_desc['number_of_nodes'] = np.prod(shape[1:])
+
+    # go to beginning of the file
+    file.seek(0)
+    freq_per_epoch = 0
+    while True:
+        desc = file.readline()
+        str_array = file.readline()
+        _, _, epoch_no = desc.strip().split('$')
+        epoch_no = int(epoch_no)
+        if epoch_no==0:
+            freq_per_epoch += 1
+        else:
+            break
+    file_desc['recording_frequency_per_epoch'] = freq_per_epoch // 2
+
+    # go to ending of the file
+    file.seek(0, os.SEEK_END)
+    end = file.tell()
+    i = 0
+    while True:
+        file.seek(end-i)
+        char = file.read(1)
+        if char == '$':
+            break
+        i += 1
+    epoch = file.readline().strip()
+    file_desc['number_of_epochs'] = int(epoch) + 1 # since epochs start from 0
+
+    return file_desc
