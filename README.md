@@ -47,16 +47,17 @@ class Net(ModuleWrapper):
 
   def __init__(self):
     super().__init__()
-    self.conv = BBBConv2d(3, 16, 5, strides=2, alpha_shape=(1,1))
+    self.conv = BBBConv2d(3, 16, 5, strides=2, alpha_shape=(1,1), name='conv')
     self.bn = nn.BatchNorm2d(16)
     self.relu = nn.ReLU()
     self.flatten = FlattenLayer(800)
-    self.fc = BBBLinear(800, 10, alpha_shape=(1,1))
+    self.fc = BBBLinear(800, 10, alpha_shape=(1,1), name='fc')
 ```
 
 #### Notes: 
 1. Add `FlattenLayer` before first `BBBLinear` block.  
 2. `forward` method of the model will return a tuple as `(logits, kl)`.
+3. Keyword argument `name` is optional and is required to use only when recording mean and variances in turned ON.
 
 ---------------------------------------------------------------------------------------------------------
 
@@ -89,12 +90,20 @@ Currently, following datasets and models are supported.
 `main_bayesian.py`: Train and Evaluate Bayesian models.  
 `config_bayesian.py`: Hyperparameters for `main_bayesian` file.  
 `main_frequentist.py`: Train and Evaluate non-Bayesian (Frequentist) models.  
-`config_frequentist.py`: Hyperparameters for `main_frequentist` file. 
+`config_frequentist.py`: Hyperparameters for `main_frequentist` file.  
+`visualize_mean_var.py`: Plotting Distributions and Line graphs of mean and variances.
 
 ---------------------------------------------------------------------------------------------------------
 
 
 
+### Recording Mean and Variance:
+If `record_mean_var` is `True`, then mean and variances for layers in `record_layers` list will be logged in checkpoints directory. Your can also specify recording frequency per epoch. All these mentioned parameters can be modified in `config_bayesian.py`.  
+Note that, the recording will only take place during the training phase of the model.  
+
+In order to visualize the recorded values, `visualize_mean_var.py` contains `draw_distributions` and `draw_lineplot` methods. Just pass the path for the log file, type of values (mean/variance) and the weight for which recording need to be visualized.  
+
+---------------------------------------------------------------------------------------------------------
 
 
 If you are using this work, please cite:
