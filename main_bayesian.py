@@ -38,7 +38,8 @@ def train_model(net, optimizer, criterion, trainloader, num_ens=1):
     kl_list = []
     freq = cfg.recording_freq_per_epoch
     freq = len(trainloader)//freq
-    for i, (inputs, labels) in enumerate(trainloader, 0):
+    for i, (inputs, labels) in enumerate(trainloader, 1):
+        cfg.curr_batch_no = i
         if i%freq==0:
             cfg.record_now = True
         else:
@@ -104,7 +105,6 @@ def run(dataset, net_type):
     trainset, testset, inputs, outputs = data.getDataset(dataset)
     train_loader, valid_loader, test_loader = data.getDataloader(
         trainset, testset, valid_size, batch_size, num_workers)
-
     net = getModel(net_type, inputs, outputs).to(device)
 
     ckpt_dir = f'checkpoints/{dataset}/bayesian'
@@ -117,7 +117,7 @@ def run(dataset, net_type):
     optimizer = Adam(net.parameters(), lr=lr_start)
     valid_loss_max = np.Inf
     for epoch in range(n_epochs):  # loop over the dataset multiple times
-        cfg.epoch_no = epoch
+        cfg.curr_epoch_no = epoch
         utils.adjust_learning_rate(optimizer, metrics.lr_linear(epoch, 0, n_epochs, lr_start))
 
         train_loss, train_acc, train_kl = train_model(net, optimizer, criterion, train_loader, num_ens=train_ens)

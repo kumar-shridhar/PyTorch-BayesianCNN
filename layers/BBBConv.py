@@ -65,9 +65,9 @@ class BBBConv2d(ModuleWrapper):
         # Local reparameterization trick
         out = mean + std * epsilon
         
-        if cfg.record_mean_var and cfg.record_now and self.name in cfg.record_layers:
-            utils.save_array_to_file(mean.cpu().detach().numpy(), self.mean_var_path, "mean", cfg.epoch_no)
-            utils.save_array_to_file(std.cpu().detach().numpy(), self.mean_var_path, "std", cfg.epoch_no)
+        if cfg.record_mean_var and cfg.record_now and self.training and self.name in cfg.record_layers:
+            utils.save_array_to_file(mean.cpu().detach().numpy(), self.mean_var_path, "mean")
+            utils.save_array_to_file(std.cpu().detach().numpy(), self.mean_var_path, "std")
 
         return out
 

@@ -8,6 +8,7 @@ import config_bayesian as cfg
 
 def draw_distributions(filename, type='mean', node_no=0):
     file_desc = utils.get_file_info(filename)
+    layer = file_desc['layer_name']
     means, std = utils.load_mean_std_from_file(filename)
     data = means if type=='mean' else stds
 
@@ -21,7 +22,7 @@ def draw_distributions(filename, type='mean', node_no=0):
         ax.axvline(np.mean(sample), color='r', linestyle='-')
         iteration = i % file_desc['recording_frequency_per_epoch']
         epoch = i // file_desc['recording_frequency_per_epoch']
-        plt.title(f'Distribution for node {node_no}: Epoch-{epoch} Iteration-{iteration}')
+        plt.title(f'Distribution for {layer} node {node_no}: Epoch-{epoch} Iteration-{iteration}')
         plt.xlabel(f'Value of {type}')
         plt.ylabel('Density')
         plt.show(block=False)
@@ -32,6 +33,7 @@ def draw_distributions(filename, type='mean', node_no=0):
 
 def draw_lineplot(filename, type='mean', node_no=0):
     file_desc = utils.get_file_info(filename)
+    layer = file_desc['layer_name']
     means, stds = utils.load_mean_std_from_file(filename)
     data = means if type=='mean' else stds
 
@@ -42,9 +44,9 @@ def draw_lineplot(filename, type='mean', node_no=0):
 
     x = np.hstack([np.arange(0, file_desc['number_of_epochs'], 1 / file_desc['recording_frequency_per_epoch'])])
     sns.lineplot(x, means)
-    plt.title(f'Mean value of {type} for node {node_no}')
+    plt.title(f'Mean value of {type} for node {node_no} of {layer}')
     plt.xlabel('Epoch Number')
     plt.ylabel(f'Mean of {type}s')
     plt.show()
 
-# draw_distributions("checkpoints/MNIST/bayesian/lenet/fc3.txt", 'mean', 3)
+# draw_lineplot("checkpoints/MNIST/bayesian/lenet/fc3.txt", 'mean', 3)

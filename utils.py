@@ -2,6 +2,8 @@ import os
 import torch
 import numpy as np
 
+import config_bayesian as cfg
+
 
 # cifar10 classes
 cifar10_classes = ['airplane', 'automobile', 'bird', 'cat', 'deer',
@@ -33,10 +35,10 @@ def adjust_learning_rate(optimizer, lr):
         param_group['lr'] = lr
 
 
-def save_array_to_file(numpy_array, filename, array_type, epoch_no):
+def save_array_to_file(numpy_array, filename, array_type):
     file = open(filename, 'a')
     shape = " ".join(map(str, numpy_array.shape))
-    file.write(f"{array_type}${shape}${epoch_no}\n")
+    file.write(f"{array_type}${shape}${cfg.curr_batch_no}${cfg.curr_epoch_no}\n")
     np.savetxt(file, numpy_array.flatten(), newline=" ", fmt="%.3f")
     file.write("\n")
     file.close()
@@ -53,7 +55,7 @@ def load_mean_std_from_file(filename):
             file.close()
             return means, stds
 
-        array_type, shape, _ = desc.strip().split('$')
+        array_type, shape, _, _ = desc.strip().split('$')
         shape = np.fromstring(shape, sep=' ', dtype=np.int64)
         numpy_array = np.fromstring(str_array, sep=' ').reshape(shape)
         if array_type=="mean":
@@ -88,7 +90,7 @@ def get_file_info(filename):
     while True:
         desc = file.readline()
         str_array = file.readline()
-        _, _, epoch_no = desc.strip().split('$')
+        _, _, _, epoch_no = desc.strip().split('$')
         epoch_no = int(epoch_no)
         if epoch_no==0:
             freq_per_epoch += 1
