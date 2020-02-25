@@ -1,3 +1,4 @@
+import os
 import argparse
 import numpy as np
 import seaborn as sns
@@ -6,7 +7,7 @@ import matplotlib.pyplot as plt
 import utils
 
 
-def draw_distributions(filename, type='mean', node_no=0, save_plots=False, plot_time=0.5):
+def draw_distributions(filename, save_dir, type='mean', node_no=0, save_plots=False, plot_time=0.5):
     file_desc = utils.get_file_info(filename)
     layer = file_desc['layer_name']
     means, std = utils.load_mean_std_from_file(filename)
@@ -34,7 +35,7 @@ def draw_distributions(filename, type='mean', node_no=0, save_plots=False, plot_
         raise NotImplementedError
 
 
-def draw_lineplot(filename, type='mean', node_no=0, save_plots=False, plot_time=5):
+def draw_lineplot(filename, save_dir, type='mean', node_no=0, save_plots=False, plot_time=5):
     file_desc = utils.get_file_info(filename)
     layer = file_desc['layer_name']
     means, stds = utils.load_mean_std_from_file(filename)
@@ -53,7 +54,7 @@ def draw_lineplot(filename, type='mean', node_no=0, save_plots=False, plot_time=
     plt.show(block=False)
     plt.pause(plot_time)
     if save_plots:
-        plt.savefig('temp.jpg')
+        plt.savefig(save_dir + 'lineplot.jpg')
 
 if __name__ == '__main__':
     parser = argparse.ArgumentParser(description = "Visualize Mean and Variance")
@@ -63,11 +64,19 @@ if __name__ == '__main__':
     parser.add_argument('--plot_type', default='lineplot', type=str, help='Which plot to draw? lineplot or distplot?')
     parser.add_argument('--plot_time', default=1, type=int, help='Pause the plot for how much time?')
     parser.add_argument('--save_plots', default=0, type=int, help='Save plots? 0 (No) or 1 (Yes)')
+    parser.add_argument('--save_dir', default='', type=str, help='Save plots to which directory?(End with a /)')
     args = parser.parse_args()
 
+    if args.save_plots:
+        save_dir = None if args.save_dir=='' else args.save_dir
+        if not save_dir:
+            save_dir = "/".join(args.filename.split("/")[:-1]) + '/plots/'
+        if not os.path.exists(save_dir):
+            os.makedirs(save_dir, exist_ok=True)
+
     if args.plot_type=='lineplot':
-        draw_lineplot(args.filename, args.data_type, args.node_no, bool(args.save_plots), args.plot_time)
+        draw_lineplot(args.filename, save_dir, args.data_type, args.node_no, bool(args.save_plots), args.plot_time)
     elif args.plot_type=='distplot':
-        draw_distributions(args.filename, args.data_type, args.node_no, bool(args.save_plots), args.plot_time)
+        draw_distributions(args.filename, save_dir, args.data_type, args.node_no, bool(args.save_plots), args.plot_time)
     else:
         raise NotImplementedError
