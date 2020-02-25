@@ -1,12 +1,12 @@
+import argparse
 import numpy as np
 import seaborn as sns
 import matplotlib.pyplot as plt
 
 import utils
-import config_bayesian as cfg
 
 
-def draw_distributions(filename, type='mean', node_no=0):
+def draw_distributions(filename, type='mean', node_no=0, save_plots=False, plot_time=0.5):
     file_desc = utils.get_file_info(filename)
     layer = file_desc['layer_name']
     means, std = utils.load_mean_std_from_file(filename)
@@ -26,12 +26,15 @@ def draw_distributions(filename, type='mean', node_no=0):
         plt.xlabel(f'Value of {type}')
         plt.ylabel('Density')
         plt.show(block=False)
-        plt.pause(0.5)
+        plt.pause(plot_time)
         ax.clear()
     plt.close()
 
+    if save_plots:
+        raise NotImplementedError
 
-def draw_lineplot(filename, type='mean', node_no=0):
+
+def draw_lineplot(filename, type='mean', node_no=0, save_plots=False, plot_time=5):
     file_desc = utils.get_file_info(filename)
     layer = file_desc['layer_name']
     means, stds = utils.load_mean_std_from_file(filename)
@@ -47,6 +50,24 @@ def draw_lineplot(filename, type='mean', node_no=0):
     plt.title(f'Mean value of {type} for node {node_no} of {layer}')
     plt.xlabel('Epoch Number')
     plt.ylabel(f'Mean of {type}s')
-    plt.show()
+    plt.show(block=False)
+    plt.pause(plot_time)
+    if save_plots:
+        plt.savefig('temp.jpg')
 
-# draw_lineplot("checkpoints/MNIST/bayesian/lenet/fc3.txt", 'mean', 3)
+if __name__ == '__main__':
+    parser = argparse.ArgumentParser(description = "Visualize Mean and Variance")
+    parser.add_argument('--filename', type=str, help='path to log file', required=True)
+    parser.add_argument('--data_type', default='mean', type=str, help='Draw plots for what? mean or std?')
+    parser.add_argument('--node_no', default=0, type=int, help='Draw plots for which node?')
+    parser.add_argument('--plot_type', default='lineplot', type=str, help='Which plot to draw? lineplot or distplot?')
+    parser.add_argument('--plot_time', default=1, type=int, help='Pause the plot for how much time?')
+    parser.add_argument('--save_plots', default=0, type=int, help='Save plots? 0 (No) or 1 (Yes)')
+    args = parser.parse_args()
+
+    if args.plot_type=='lineplot':
+        draw_lineplot(args.filename, args.data_type, args.node_no, bool(args.save_plots), args.plot_time)
+    elif args.plot_type=='distplot':
+        draw_distributions(args.filename, args.data_type, args.node_no, bool(args.save_plots), args.plot_time)
+    else:
+        raise NotImplementedError

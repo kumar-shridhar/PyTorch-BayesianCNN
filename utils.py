@@ -90,6 +90,8 @@ def get_file_info(filename):
     while True:
         desc = file.readline()
         str_array = file.readline()
+        if desc=="":
+            break
         _, _, _, epoch_no = desc.strip().split('$')
         epoch_no = int(epoch_no)
         if epoch_no==0:
