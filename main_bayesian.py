@@ -145,6 +145,9 @@ if __name__ == '__main__':
         if not os.path.exists(mean_var_dir):
             os.makedirs(mean_var_dir, exist_ok=True)
         for file in os.listdir(mean_var_dir):
-            os.remove(mean_var_dir + file)
+            try:
+                os.remove(mean_var_dir + file)
+            except IsADirectoryError:
+                pass
 
     run(args.dataset, args.net_type)
