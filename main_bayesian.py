@@ -18,7 +18,7 @@ from models.BayesianModels.BayesianLeNet import BBBLeNet
 
 # CUDA settings
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-
+device = "cpu"
 
 def getModel(net_type, inputs, outputs):
     if (net_type == 'lenet'):

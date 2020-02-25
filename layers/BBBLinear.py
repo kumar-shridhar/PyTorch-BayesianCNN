@@ -29,8 +29,6 @@ class BBBLinear(ModuleWrapper):
         self.reset_parameters()
         self.kl_value = metrics.calculate_kl
         self.name = name
-        if cfg.record_mean_var:
-            self.mean_var_path = cfg.mean_var_dir + f"{self.name}.txt"
 
     def reset_parameters(self):
         stdv = 1. / math.sqrt(self.W.size(1))
@@ -63,4 +61,9 @@ class BBBLinear(ModuleWrapper):
 
     def kl_loss(self):
         return self.W.nelement() * self.kl_value(self.log_alpha) / self.log_alpha.nelement()
+
+    @property
+    def mean_var_path(self):
+        assert cfg.record_mean_var
+        return cfg.mean_var_dir + f"{self.name}.txt"
 

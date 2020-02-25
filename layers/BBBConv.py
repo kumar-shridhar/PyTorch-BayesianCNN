@@ -37,8 +37,6 @@ class BBBConv2d(ModuleWrapper):
         self.log_alpha = Parameter(torch.Tensor(*alpha_shape))
         self.reset_parameters()
         self.name = name
-        if cfg.record_mean_var:
-            self.mean_var_path = cfg.mean_var_dir + f"{self.name}.txt"
 
     def reset_parameters(self):
         n = self.in_channels
@@ -74,5 +72,7 @@ class BBBConv2d(ModuleWrapper):
     def kl_loss(self):
         return self.weight.nelement() / self.log_alpha.nelement() * metrics.calculate_kl(self.log_alpha)
 
-
-
+    @property
+    def mean_var_path(self):
+        assert cfg.record_mean_var
+        return cfg.mean_var_dir + f"{self.name}.txt"
