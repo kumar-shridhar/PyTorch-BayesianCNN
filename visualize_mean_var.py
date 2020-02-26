@@ -12,7 +12,7 @@ def draw_distributions(filename, save_dir, type='mean', node_no=0, save_plots=Fa
     file_desc = utils.get_file_info(filename)
     layer = file_desc['layer_name']
     means, std = utils.load_mean_std_from_file(filename)
-    data = means if type=='mean' else stds
+    data = means if type=='mean' else std
     frames = []
     fig = plt.figure()
     ax = fig.add_subplot(111)
