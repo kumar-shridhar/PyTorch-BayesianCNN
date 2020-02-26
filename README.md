@@ -101,7 +101,7 @@ Currently, following datasets and models are supported.
 If `record_mean_var` is `True`, then mean and variances for layers in `record_layers` list will be logged in checkpoints directory. You can also specify recording frequency per epoch. All these mentioned parameters can be modified in `config_bayesian.py`.  
 
 ![Mean value change of FC3 Layer (Node 0)](experiments/figures/fc3-node_0-mean-lineplot.jpg)
-![Standard Deviation value change of FC3 Layer (Node 0)](experiments/figures/fc3-node_0-mean-lineplot.jpg)
+![Standard Deviation value change of FC3 Layer (Node 0)](experiments/figures/fc3-node_0-std-lineplot.jpg)
 
 #### Notes:
 1. The recording will only take place during the training phase of the model.  
