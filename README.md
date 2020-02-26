@@ -98,10 +98,22 @@ Currently, following datasets and models are supported.
 
 
 ### Recording Mean and Variance:
-If `record_mean_var` is `True`, then mean and variances for layers in `record_layers` list will be logged in checkpoints directory. Your can also specify recording frequency per epoch. All these mentioned parameters can be modified in `config_bayesian.py`.  
-Note that, the recording will only take place during the training phase of the model.  
+If `record_mean_var` is `True`, then mean and variances for layers in `record_layers` list will be logged in checkpoints directory. You can also specify recording frequency per epoch. All these mentioned parameters can be modified in `config_bayesian.py`.  
+#### Notes:
+1. The recording will only take place during the training phase of the model.  
+2. Choose `recording_freq_per_epoch` as a multiple of number of training iterations. It's not necessary but this will record exactly that many times.  
+   Example: for `num_iteration = 96`, `recording_freq_per_epoch = 48`. Therefore, `step_size` will be 2 and will record exactly 48 times.  
+   But for `num_iteration = 96`, `recording_freq_per_epoch = 49`. Therefore, `step_size` will be 1 and will record 96 times.  
+3. Choosing `recording_freq_per_epoch` higher than number of training iterations will raise `ZeroDivisionError`.
 
-In order to visualize the recorded values, `visualize_mean_var.py` contains `draw_distributions` and `draw_lineplot` methods. Just pass the path for the log file, type of values (mean/variance) and the weight for which recording need to be visualized.  
+In order to visualize the recorded values, `visualize_mean_var.py` contains `draw_distributions` and `draw_lineplot` methods. Following are the arguments which needs to be passed to `visualize_mean_var.py`:  
+1. `--filename`: Path to log file.
+2. `--data_type`: Draw plots for what? `mean` or `std`? Default is `'mean'`.  
+3. `--node_no`: Index of the node for which to draw plots. Index is after flattening of the layer. Default is 0 i.e, first node.
+4. `--plot_type`: Which plot to draw? Currently we support lineplot and distplot. Default is `'lineplot'`.
+5. `--plot_time`: Pauses the plot for this much amount of time before updating it. Default is 1 second.
+6. `--save_plots`: Whether to save plots or not. Default is 0 for No. 1 is for Yes.
+7. `--save_dir`: Directory for saving plots. Must end with `'/'`. If not provided, default directory will be `filename_directory/plots/`.
 
 ---------------------------------------------------------------------------------------------------------
 
