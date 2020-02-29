@@ -76,9 +76,9 @@ def draw_lineplot(filename, save_dir, type='mean', node_no=0, save_plots=False, 
 
     x = np.hstack([np.arange(0, file_desc['number_of_epochs'], 1 / freq)])
     sns.lineplot(x, means)
-    plt.title(f'Mean value of {type} for node {node_no} of {layer}')
+    plt.title(f'Average value of {type} for node {node_no} of {layer}')
     plt.xlabel('Epoch Number')
-    plt.ylabel(f'Mean of {type}s')
+    plt.ylabel(f'Average {type}s')
     plt.show(block=False)
     plt.pause(plot_time)
     if save_plots:
