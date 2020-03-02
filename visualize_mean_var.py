@@ -22,7 +22,7 @@ def draw_distributions(filename, save_dir, type='mean', node_no=0, save_plots=Fa
         for i in range(len(means)):
             mean = np.mean(means[i].reshape((batch_size, -1))[:, node_no])
             std = np.sum(np.square(stds[i].reshape((batch_size, -1))[:, node_no])) / batch_size
-            sns.distplot(np.random.normal(loc=mean, scale=std, size=1000), ax=ax)
+            sns.distplot(np.random.normal(loc=mean, scale=std, size=1000), ax=ax, hist=False)
             ax.axvline(mean, color='r', linestyle='-')
             iteration = i % freq
             epoch = i // freq
