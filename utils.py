@@ -1,6 +1,7 @@
 import os
 import torch
 import numpy as np
+from torch.nn import functional as F
 
 import config_bayesian as cfg
 
@@ -112,3 +113,29 @@ def get_file_info(filename):
     file_desc['number_of_epochs'] = int(epoch) + 1 # since epochs start from 0
 
     return file_desc
+
+
+def calc_uncertainty_softmax(output):
+    prediction = F.softmax(output, dim = 1)
+    results = torch.max(prediction, 1 )
+    p_hat = np.array(results[0].cpu().detach())
+    epistemic = np.mean(p_hat ** 2, axis=0) - np.mean(p_hat, axis=0) ** 2
+    aleatoric = np.mean(p_hat * (1-p_hat), axis = 0)
+    return epistemic, aleatoric
+
+
+def calc_uncertainty_normalized(output, iter=1):
+    outputs = []
+    for i in range(iter):
+        prediction = F.softplus(output)
+        prediction = prediction / torch.sum(prediction, dim=0)
+        prediction = prediction.cpu().detach()
+        outputs.append(prediction)
+    res = np.mean(prediction.numpy(), axis=0)
+    p_hat= torch.cat(outputs, 1)
+    p_hat=p_hat.numpy()
+
+    aleatoric = np.diag(res) - p_hat.T.dot(p_hat)/p_hat.shape[0]
+    tmp = p_hat - res
+    epistemic = tmp.T.dot(tmp)/tmp.shape[0]
+    return np.sum(epistemic, keepdims = True).item(), np.sum(aleatoric, keepdims = True).item()
