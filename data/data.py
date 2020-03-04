@@ -34,8 +34,20 @@ def extract_classes(dataset, classes):
 
 
 def getDataset(dataset):
-    transform = transforms.Compose([
+    transform_split_mnist = transforms.Compose([
         transforms.ToPILImage(),
+        transforms.Resize((32, 32)),
+        transforms.RandomRotation(10),
+        transforms.ToTensor(),
+        ])
+
+    transform_mnist = transforms.Compose([
+        transforms.Resize((32, 32)),
+        transforms.RandomRotation(10),
+        transforms.ToTensor(),
+        ])
+
+    transform_cifar = transforms.Compose([
         transforms.Resize((32, 32)),
         transforms.RandomHorizontalFlip(),
         transforms.RandomRotation(10),
@@ -43,46 +55,46 @@ def getDataset(dataset):
         ])
 
     if(dataset == 'CIFAR10'):
-        trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform)
-        testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform)
+        trainset = torchvision.datasets.CIFAR10(root='./data', train=True, download=True, transform=transform_cifar)
+        testset = torchvision.datasets.CIFAR10(root='./data', train=False, download=True, transform=transform_cifar)
         num_classes = 10
         inputs=3
 
     elif(dataset == 'CIFAR100'):
-        trainset = torchvision.datasets.CIFAR100(root='./data', train=True, download=True, transform=transform)
-        testset = torchvision.datasets.CIFAR100(root='./data', train=False, download=True, transform=transform)
+        trainset = torchvision.datasets.CIFAR100(root='./data', train=True, download=True, transform=transform_cifar)
+        testset = torchvision.datasets.CIFAR100(root='./data', train=False, download=True, transform=transform_cifar)
         num_classes = 100
         inputs = 3
         
     elif(dataset == 'MNIST'):
-        trainset = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=transform)
-        testset = torchvision.datasets.MNIST(root='./data', train=False, download=True, transform=transform)
+        trainset = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=transform_mnist)
+        testset = torchvision.datasets.MNIST(root='./data', train=False, download=True, transform=transform_mnist)
         num_classes = 10
         inputs = 1
 
     elif(dataset == 'SplitMNIST-1'):
-        trainset = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=transform)
-        testset = torchvision.datasets.MNIST(root='./data', train=False, download=True, transform=transform)
+        trainset = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=transform_mnist)
+        testset = torchvision.datasets.MNIST(root='./data', train=False, download=True, transform=transform_mnist)
 
         train_data, train_targets = extract_classes(trainset, [0, 1, 2, 3, 4])
         test_data, test_targets = extract_classes(testset, [0, 1, 2, 3, 4])
 
-        trainset = CustomDataset(train_data, train_targets, transform=transform)
-        testset = CustomDataset(test_data, test_targets, transform=transform)
+        trainset = CustomDataset(train_data, train_targets, transform=transform_split_mnist)
+        testset = CustomDataset(test_data, test_targets, transform=transform_split_mnist)
         num_classes = 5
         inputs = 1
 
     elif(dataset == 'SplitMNIST-2'):
-        trainset = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=transform)
-        testset = torchvision.datasets.MNIST(root='./data', train=False, download=True, transform=transform)
+        trainset = torchvision.datasets.MNIST(root='./data', train=True, download=True, transform=transform_mnist)
+        testset = torchvision.datasets.MNIST(root='./data', train=False, download=True, transform=transform_mnist)
 
         train_data, train_targets = extract_classes(trainset, [5, 6, 7, 8, 9])
         test_data, test_targets = extract_classes(testset, [5, 6, 7, 8, 9])
         train_targets -= 5 # Mapping target 5-9 to 0-4
         test_targets -= 5 # Hence, add 5 after prediction
 
-        trainset = CustomDataset(train_data, train_targets, transform=transform)
-        testset = CustomDataset(test_data, test_targets, transform=transform)
+        trainset = CustomDataset(train_data, train_targets, transform=transform_split_mnist)
+        testset = CustomDataset(test_data, test_targets, transform=transform_split_mnist)
         num_classes = 5
         inputs = 1
 
