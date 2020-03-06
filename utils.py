@@ -115,27 +115,43 @@ def get_file_info(filename):
     return file_desc
 
 
-def calc_uncertainty_softmax(output):
-    prediction = F.softmax(output, dim = 1)
-    results = torch.max(prediction, 1 )
-    p_hat = np.array(results[0].cpu().detach())
-    epistemic = np.mean(p_hat ** 2, axis=0) - np.mean(p_hat, axis=0) ** 2
-    aleatoric = np.mean(p_hat * (1-p_hat), axis = 0)
+def calc_uncertainty_softmax(model, input_image, T=10):
+    input_image = input_image.unsqueeze(0)
+    p_hat = []
+    for t in range(T):
+        net_out, _ = model(input_image)
+        p_hat.append(F.softmax(net_out, dim=1).cpu().detach())
+
+    p_hat = torch.cat(p_hat, dim=0).numpy()
+    p_bar = np.mean(p_hat, axis=0)
+
+    epistemic = p_hat - np.expand_dims(p_bar, 0)
+    epistemic = np.dot(epistemic.T, epistemic)
+    epistemic = np.sum(epistemic).item() / T
+
+    aleatoric = np.diag(p_hat) - np.dot(p_hat.T, p_hat)
+    aleatoric = np.sum(aleatoric).item() / T
+
     return epistemic, aleatoric
 
 
-def calc_uncertainty_normalized(output, iter=1):
-    outputs = []
-    for i in range(iter):
-        prediction = F.softplus(output)
-        prediction = prediction / torch.sum(prediction, dim=0)
-        prediction = prediction.cpu().detach()
-        outputs.append(prediction)
-    res = np.mean(prediction.numpy(), axis=0)
-    p_hat= torch.cat(outputs, 1)
-    p_hat=p_hat.numpy()
+def calc_uncertainty_normalized(model, input_image, T=10):
+    input_image = input_image.unsqueeze(0)
+    p_hat = []
+    for t in range(T):
+        net_out, _ = model(input_image)
+        prediction = F.softplus(net_out)
+        prediction = prediction / torch.sum(prediction, dim=1)
+        p_hat.append(prediction.cpu().detach())
 
-    aleatoric = np.diag(res) - p_hat.T.dot(p_hat)/p_hat.shape[0]
-    tmp = p_hat - res
-    epistemic = tmp.T.dot(tmp)/tmp.shape[0]
-    return np.sum(epistemic, keepdims = True).item(), np.sum(aleatoric, keepdims = True).item()
+    p_hat = torch.cat(p_hat, dim=0).numpy()
+    p_bar = np.mean(p_hat, axis=0)
+
+    epistemic = p_hat - np.expand_dims(p_bar, 0)
+    epistemic = np.dot(epistemic.T, epistemic)
+    epistemic = np.sum(epistemic).item() / T
+
+    aleatoric = np.diag(p_hat) - np.dot(p_hat.T, p_hat)
+    aleatoric = np.sum(aleatoric).item() / T
+
+    return epistemic, aleatoric
