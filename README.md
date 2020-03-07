@@ -106,6 +106,24 @@ In order to visualize the recorded values, `visualize_mean_var.py` contains `dra
 ---------------------------------------------------------------------------------------------------------
 
 
+
+### Uncertainty Estimation:  
+There are two types of uncertainties: Aleatoric and Epistemic. Aleatoric uncertainty is a measure for the variation of data and Epistemic uncertainty is caused by the model.  
+Here, two methods are provided in `utils.py` i.e, `calc_uncertainty_softmax` and `calc_uncertainty_normalized` which are respectively based on equation 4 from [this paper](https://openreview.net/pdf?id=Sk_P2Q9sG) and equation 15 from [this paper](https://arxiv.org/pdf/1806.05978.pdf).  
+Also, a script `uncertainty_estimation.py` is provided which can be used to compare uncertainties by a Bayesian Neural Network on `MNIST` and `notMNIST` dataset. You can provide arguments like:     
+1. `net_type`: `lenet`, `alexnet` or `3conv3fc`. Default is `lenet`.   
+2. `weights_path`: Weights for the given `net_type`. Default is `'checkpoints/MNIST/bayesian/model_lenet.pt'`.  
+3. `not_mnist_dir`: Directory of `notMNIST` dataset. Default is `'data\'`. 
+4. `num_batches`: Number of batches for which uncertainties need to be calculated.  
+
+**Notes**:  
+1. You need to download the [notMNIST](http://yaroslavvb.blogspot.com/2011/09/notmnist-dataset.html) dataset from [here](http://yaroslavvb.com/upload/notMNIST/notMNIST_small.tar.gz).  
+2. The script `uncertainty_estimation.py` calculates average uncertainty over a mini-batch whereas, the `calc_uncertainty_softmax` and `calc_uncertainty_normalized` calculates uncertainty over a single input sample.  
+
+---------------------------------------------------------------------------------------------------------
+
+
+
 If you are using this work, please cite:
 
 ```
