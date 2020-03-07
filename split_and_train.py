@@ -12,7 +12,6 @@ import data
 import utils
 import metrics
 import config_bayesian as cfg
-from models.BayesianModels.BayesianLeNet import BBBLeNet
 from main_bayesian import getModel, train_model, validate_model
 
 mean_var_dir1 = None
@@ -20,7 +19,6 @@ mean_var_dir2 = None
 
 # CUDA settings
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-device = "cpu"
 
 class CustomDataset(Dataset):
     def __init__(self, data, labels, transform=None):
