@@ -2,11 +2,7 @@ import os
 import argparse
 import torch
 import numpy as np
-import seaborn as sns
 from torch.optim import Adam
-from torch.utils.data import Dataset
-import torchvision.transforms as transforms
-
 
 import utils
 import metrics
@@ -26,9 +22,6 @@ def train_splitted(num_tasks, net_type='lenet'):
     valid_ens = cfg.valid_ens
     n_epochs = cfg.n_epochs
     lr_start = cfg.lr_start
-    num_workers = cfg.num_workers
-    valid_size = cfg.valid_size
-    batch_size = cfg.batch_size
 
     ckpt_dir = f"checkpoints/MNIST/bayesian/splitted/{num_tasks}-tasks/"
     if not os.path.exists(ckpt_dir):
@@ -49,7 +42,6 @@ def train_splitted(num_tasks, net_type='lenet'):
         optimizer = Adam(net.parameters(), lr=lr_start)
         valid_loss_max = np.Inf
         for epoch in range(n_epochs):  # loop over the dataset multiple times
-            cfg.curr_epoch_no = epoch
             utils.adjust_learning_rate(optimizer, metrics.lr_linear(epoch, 0, n_epochs, lr_start))
 
             train_loss, train_acc, train_kl = train_model(net, optimizer, criterion, train_loader, num_ens=train_ens)
