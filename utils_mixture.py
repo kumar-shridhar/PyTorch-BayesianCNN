@@ -115,46 +115,49 @@ def predict_using_epistemic_uncertainty_with_mixture_model(model, fc3_1, fc3_2, 
         for image in range(inputs.shape[0]):  # loop over batch
             input_image = inputs[0].unsqueeze(0)
 
-            p_hat = []
-            preds = []
+            p_hat_1 = []
+            p_hat_2 = []
+            preds_1 = []
+            preds_2 = []
             for t in range(T):
-                net_out, _ = model(input_image)
-                net_out = fc3_1(net_out)
-                preds.append(net_out)
-                prediction = F.softplus(net_out)
-                prediction = prediction / torch.sum(prediction, dim=1)
-                p_hat.append(prediction.cpu().detach())
+                net_out_mix, _ = model(input_image)
 
-            p_hat = torch.cat(p_hat, dim=0).numpy()
+                # set_1
+                net_out_1 = fc3_1(net_out_mix)
+                preds_1.append(net_out_1)
+                prediction = F.softplus(net_out_1)
+                prediction = prediction / torch.sum(prediction, dim=1)
+                p_hat_1.append(prediction.cpu().detach())
+
+                # set_2
+                net_out_2 = fc3_2(net_out_mix)
+                preds_2.append(net_out_2)
+                prediction = F.softplus(net_out_2)
+                prediction = prediction / torch.sum(prediction, dim=1)
+                p_hat_2.append(prediction.cpu().detach())
+
+            # set_1
+            p_hat = torch.cat(p_hat_1, dim=0).numpy()
             p_bar = np.mean(p_hat, axis=0)
 
-            preds = torch.cat(preds, dim=0)
+            preds = torch.cat(preds_1, dim=0)
             pred_set_1 = torch.sum(preds, dim=0).unsqueeze(0)
 
             temp = p_hat - np.expand_dims(p_bar, 0)
-            epistemic_set_1 = np.dot(temp.T, temp) / T
-            epistemic_set_1 = np.sum(np.diag(epistemic_set_1)).item()
+            epistemic = np.dot(temp.T, temp) / T
+            epistemic_set_1 = np.sum(np.diag(epistemic)).item()
             total_epistemic_1 += epistemic_set_1
 
-            p_hat = []
-            preds = []
-            for t in range(T):
-                net_out, _ = model(input_image)
-                net_out = fc3_2(net_out)
-                preds.append(net_out)
-                prediction = F.softplus(net_out)
-                prediction = prediction / torch.sum(prediction, dim=1)
-                p_hat.append(prediction.cpu().detach())
-
-            p_hat = torch.cat(p_hat, dim=0).numpy()
+            # set_2
+            p_hat = torch.cat(p_hat_2, dim=0).numpy()
             p_bar = np.mean(p_hat, axis=0)
 
-            preds = torch.cat(preds, dim=0)
+            preds = torch.cat(preds_2, dim=0)
             pred_set_2 = torch.sum(preds, dim=0).unsqueeze(0)
 
             temp = p_hat - np.expand_dims(p_bar, 0)
-            epistemic_set_2 = np.dot(temp.T, temp) / T
-            epistemic_set_2 = np.sum(np.diag(epistemic_set_2)).item()
+            epistemic = np.dot(temp.T, temp) / T
+            epistemic_set_2 = np.sum(np.diag(epistemic)).item()
             total_epistemic_2 += epistemic_set_2
 
             if epistemic_set_1 > epistemic_set_2:
