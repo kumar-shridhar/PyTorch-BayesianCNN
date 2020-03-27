@@ -112,8 +112,8 @@ def predict_using_epistemic_uncertainty_with_mixture_model(model, fc3_1, fc3_2, 
     for i, (inputs, labels) in enumerate(valid_loader):
         inputs, labels = inputs.to(device), labels.to(device)
         outputs = []
-        for image in range(inputs.shape[0]):  # loop over batch
-            input_image = inputs[0].unsqueeze(0)
+        for i in range(inputs.shape[0]):  # loop over batch
+            input_image = inputs[i].unsqueeze(0)
 
             p_hat_1 = []
             p_hat_2 = []
@@ -184,8 +184,8 @@ def predict_using_epistemic_uncertainty_without_mixture_model(net_1, net_2, vali
     for i, (inputs, labels) in enumerate(valid_loader):
         inputs, labels = inputs.to(device), labels.to(device)
         outputs = []
-        for image in range(inputs.shape[0]):  # loop over batch
-            input_image = inputs[0].unsqueeze(0)
+        for i in range(inputs.shape[0]):  # loop over batch
+            input_image = inputs[i].unsqueeze(0)
 
             p_hat = []
             preds = []
@@ -248,8 +248,8 @@ def predict_using_epistemic_uncertainty_single_model(model, valid_loader, T=10):
     for i, (inputs, labels) in enumerate(valid_loader):
         inputs, labels = inputs.to(device), labels.to(device)
         outputs = []
-        for image in range(inputs.shape[0]):  # loop over batch
-            input_image = inputs[0].unsqueeze(0)
+        for i in range(inputs.shape[0]):  # loop over batch
+            input_image = inputs[i].unsqueeze(0)
 
             p_hat = []
             preds = []

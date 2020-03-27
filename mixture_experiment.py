@@ -17,11 +17,13 @@ def experiment_average_weights_mixture_model():
 
     print("Model-1, Loader-1:", calculate_accuracy(net1, loaders1[1]))
     print("Model-2, Loader-2:", calculate_accuracy(net2, loaders2[1]))
+    print("Model-1, Loader-2:", calculate_accuracy(net1, loaders2[1]))
+    print("Model-2, Loader-1:", calculate_accuracy(net2, loaders1[1]))
     print("Model-Mix, Loader-1:", calculate_accuracy(net_mix, loaders1[1]))
     print("Model-Mix, Loader-2:", calculate_accuracy(net_mix, loaders2[1]))
 
 
-def experiment_average_weights_mixture_model_with_uncertainty():
+def experiment_simultaneous_average_weights_mixture_model_with_uncertainty():
     num_tasks = 2
     weights_dir = "checkpoints/MNIST/bayesian/splitted/2-tasks/"
 
@@ -51,7 +53,7 @@ def experiment_average_weights_mixture_model_with_uncertainty():
     print("Model-Mix, Loader-2:", predict_using_epistemic_uncertainty_with_mixture_model(net_mix, fc3_1, fc3_2, loaders2[1]))
 
 
-def experiment_average_weights_without_mixture_model_with_uncertainty():
+def experiment_simultaneous_without_mixture_model_with_uncertainty():
     num_tasks = 2
     weights_dir = "checkpoints/MNIST/bayesian/splitted/2-tasks/"
 
@@ -62,8 +64,8 @@ def experiment_average_weights_without_mixture_model_with_uncertainty():
 
     print("Model-1, Loader-1:", calculate_accuracy(net1, loaders1[1]))
     print("Model-2, Loader-2:", calculate_accuracy(net2, loaders2[1]))
-    print("Model-1-Uncertainty, Loader-1:", predict_using_epistemic_uncertainty_without_mixture_model(net1, net2, loaders1[1]))
-    print("Model-2-Uncertainty, Loader-2:", predict_using_epistemic_uncertainty_without_mixture_model(net1, net2, loaders2[1]))
+    print("Both Models, Loader-1:", predict_using_epistemic_uncertainty_without_mixture_model(net1, net2, loaders1[1]))
+    print("Both Models, Loader-2:", predict_using_epistemic_uncertainty_without_mixture_model(net1, net2, loaders2[1]))
 
 
 def experiment_simple_bayesian_model_with_uncertainty():
@@ -81,4 +83,4 @@ def experiment_simple_bayesian_model_with_uncertainty():
     print("Model-2-Uncertainty, Loader-2:", predict_using_epistemic_uncertainty_single_model(net2, loaders2[1]))
 
 if __name__ == '__main__':
-    experiment_simple_bayesian_model_with_uncertainty()
+    experiment_average_weights_mixture_model()
