@@ -102,7 +102,7 @@ def calculate_accuracy(net, validloader, offset=0, num_ens=1):
     return np.mean(accs)
 
 
-def predict_using_epistemic_uncertainty_with_mixture_model(model, fc3_1, fc3_2, valid_loader, T=10):  # over a batch (a pass)
+def predict_using_epistemic_uncertainty_with_mixture_model(model, fc3_1, fc3_2, valid_loader, T=10):
     accs = []
     total_epistemic_1 = 0.0
     total_epistemic_2 = 0.0
@@ -174,7 +174,7 @@ def predict_using_epistemic_uncertainty_with_mixture_model(model, fc3_1, fc3_2, 
         set_2_selected/(set_1_selected + set_2_selected), total_epistemic_1, total_epistemic_2
 
 
-def predict_using_epistemic_uncertainty_without_mixture_model(net_1, net_2, valid_loader, T=10):  # over a batch (a pass)
+def predict_using_epistemic_uncertainty_without_mixture_model(net_1, net_2, valid_loader, T=10):
     accs = []
     total_epistemic_1 = 0.0
     total_epistemic_2 = 0.0
