@@ -1,5 +1,7 @@
-import os
 import sys
+sys.path.append('..')
+
+import os
 import datetime
 import torch
 import contextlib

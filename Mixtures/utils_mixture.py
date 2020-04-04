@@ -1,3 +1,6 @@
+import sys
+sys.path.append('..')
+
 import os
 import torch
 import numpy as np
