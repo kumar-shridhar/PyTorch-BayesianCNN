@@ -117,7 +117,6 @@ class GaussianMixture(torch.nn.Module):
 
             i += 1
             j = self.log_likelihood - log_likelihood_old
-
             if j <= delta:
                 # when the score decreases, revert to old parameters
                 self.__update_mu(mu_old)

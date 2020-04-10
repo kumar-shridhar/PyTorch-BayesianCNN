@@ -39,11 +39,11 @@ def plot_data(data, y=None):
     plt.close()
 
 
-means = [[1, 4], [5, 5], [2, -1]]
-vars = [[0.1, 0.1], [0.05, 0.4], [0.5, 0.2]]
-data = create_synthetic_data(3, 2, 600, means, vars)
+means = [[1, 4], [5, 5], [2, -1]]  # list of task's means(which is mean of each feature)
+vars = [[0.1, 0.1], [0.05, 0.4], [0.5, 0.2]]  # list of task's vars(which is var of each feature)
+data = create_synthetic_data(3, 2, 600, means, vars)  # shape: (total_samples, num_features)
 plot_data(data)
-model = gmm.GaussianMixture(3, 2)
+model = gmm.GaussianMixture(3, 2)  # (num_gaussians, num_features)
 model.fit(data)
 y = model.predict(data)
 plot_data(data, y)
