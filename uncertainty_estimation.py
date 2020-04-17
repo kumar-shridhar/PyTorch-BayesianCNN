@@ -30,68 +30,28 @@ def init_dataset(notmnist_dir):
     notmnist_set = torchvision.datasets.ImageFolder(root=notmnist_dir)
 
 
-def calc_uncertainty_softmax(model, input_image, T=15, return_pred=False, return_diag=False):
+def get_uncertainty_per_image(model, input_image, T=15, normalized=False):
     input_image = input_image.unsqueeze(0)
-    p_hat = []
-    if return_pred:
-        preds = []
-    for t in range(T):
-        net_out, _ = model(input_image)
-        if return_pred:
-            preds.append(net_out)
-        p_hat.append(F.softmax(net_out, dim=1).cpu().detach())
+    input_images = input_image.repeat(T, 1, 1, 1)
 
-    p_hat = torch.cat(p_hat, dim=0).numpy()
-    p_bar = np.mean(p_hat, axis=0)
-
-    temp = p_hat - np.expand_dims(p_bar, 0)
-    epistemic = np.dot(temp.T, temp) / T
-
-    aleatoric = np.diag(p_bar) - (np.dot(p_hat.T, p_hat) / T)
-
-    if return_diag:
-        epistemic, aleatoric = np.diag(epistemic), np.diag(aleatoric)
-
-    # Prediction
-    if return_pred:
-        preds = torch.cat(preds, dim=0).detach().numpy()
-        pred = np.sum(preds, axis=0).squeeze()
-        return epistemic, aleatoric, np.argmax(pred)
-
-    return epistemic, aleatoric
-
-
-def calc_uncertainty_normalized(model, input_image, T=15, return_pred=False, return_diag=False):
-    input_image = input_image.unsqueeze(0)
-    p_hat = []
-    if return_pred:
-        preds = []
-    for t in range(T):
-        net_out, _ = model(input_image)
-        if return_pred:
-            preds.append(net_out)
+    net_out, _ = model(input_images)
+    pred = torch.mean(net_out, dim=0).cpu().detach().numpy()
+    if normalized:
         prediction = F.softplus(net_out)
-        prediction = prediction / torch.sum(prediction, dim=1)
-        p_hat.append(prediction.cpu().detach())
-
-    p_hat = torch.cat(p_hat, dim=0).numpy()
+        p_hat = prediction / torch.sum(prediction, dim=1).unsqueeze(1)
+    else:
+        p_hat = F.softmax(net_out, dim=1)
+    p_hat = p_hat.detach().cpu().numpy()
     p_bar = np.mean(p_hat, axis=0)
 
     temp = p_hat - np.expand_dims(p_bar, 0)
     epistemic = np.dot(temp.T, temp) / T
+    epistemic = np.diag(epistemic)
 
     aleatoric = np.diag(p_bar) - (np.dot(p_hat.T, p_hat) / T)
+    aleatoric = np.diag(aleatoric)
 
-    if return_diag:
-        epistemic, aleatoric = np.diag(epistemic), np.diag(aleatoric)
-
-    # Prediction
-    if return_pred:
-        preds = torch.cat(preds, dim=0).detach().numpy()
-        pred = np.sum(preds, axis=0).squeeze()
-        return epistemic, aleatoric, np.argmax(pred)
-
-    return epistemic, aleatoric
+    return pred, epistemic, aleatoric
 
 
 def get_sample(dataset, sample_type='mnist'):
@@ -125,19 +85,19 @@ def run(net_type, weight_path, notmnist_dir):
     ale_stats_soft = fig.add_subplot(326)
 
     sample_mnist, truth_mnist = get_sample(mnist_set)
-    epi_mnist_norm, ale_mnist_norm, pred_mnist = calc_uncertainty_normalized(net, sample_mnist, return_pred=True, return_diag=True)
-    epi_mnist_soft, ale_mnist_soft, pred_mnist = calc_uncertainty_softmax(net, sample_mnist, return_pred=True, return_diag=True)
+    pred_mnist, epi_mnist_norm, ale_mnist_norm = get_uncertainty_per_image(net, sample_mnist, T=25, normalized=True)
+    pred_mnist, epi_mnist_soft, ale_mnist_soft = get_uncertainty_per_image(net, sample_mnist, T=25, normalized=False)
     mnist_img.imshow(sample_mnist.squeeze(), cmap='gray')
     mnist_img.axis('off')
-    mnist_img.set_title('MNIST Truth: {} Prediction: {}'.format(int(truth_mnist), int(pred_mnist)))
+    mnist_img.set_title('MNIST Truth: {} Prediction: {}'.format(int(truth_mnist), int(np.argmax(pred_mnist))))
 
     sample_notmnist, truth_notmnist = get_sample(notmnist_set, sample_type='notmnist')
-    epi_notmnist_norm, ale_notmnist_norm, pred_notmnist = calc_uncertainty_normalized(net, sample_notmnist, return_pred=True, return_diag=True)
-    epi_notmnist_soft, ale_notmnist_soft, pred_notmnist = calc_uncertainty_softmax(net, sample_notmnist, return_pred=True, return_diag=True)
+    pred_notmnist, epi_notmnist_norm, ale_notmnist_norm = get_uncertainty_per_image(net, sample_notmnist, T=25, normalized=True)
+    pred_notmnist, epi_notmnist_soft, ale_notmnist_soft = get_uncertainty_per_image(net, sample_notmnist, T=25, normalized=False)
     notmnist_img.imshow(sample_notmnist.squeeze(), cmap='gray')
     notmnist_img.axis('off')
     notmnist_img.set_title('notMNIST Truth: {}({}) Prediction: {}({})'.format(
-        int(truth_notmnist), chr(65 + truth_notmnist), int(pred_notmnist), chr(65 + pred_notmnist)))
+        int(truth_notmnist), chr(65 + truth_notmnist), int(np.argmax(pred_notmnist)), chr(65 + np.argmax(pred_notmnist))))
 
     x = list(range(10))
     data = pd.DataFrame({
