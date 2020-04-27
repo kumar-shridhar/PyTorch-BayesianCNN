@@ -10,7 +10,8 @@ from torch.nn import functional as F
 import data
 import utils
 import metrics
-from main_bayesian import getModel
+from main_bayesian import getModel as getBayesianModel
+from main_frequentist import getModel as getFrequentistModel
 import config_mixtures as cfg
 
 
@@ -46,14 +47,18 @@ def get_splitmnist_dataloaders(num_tasks, return_datasets=False):
     return loaders
 
 
-def get_splitmnist_models(num_tasks, pretrained=False, weights_dir=None, net_type='lenet'):
+def get_splitmnist_models(num_tasks, bayesian=True, pretrained=False, weights_dir=None, net_type='lenet'):
     inputs = 1
     outputs = 10 // num_tasks
     models = []
     if pretrained:
         assert weights_dir
     for i in range(1, num_tasks + 1):
-        models.append(getModel(net_type, inputs, outputs))
+        if bayesian:
+            model = getBayesianModel(net_type, inputs, outputs)
+        else:
+            model = getFrequentistModel(net_type, inputs, outputs)
+        models.append(model)
         if pretrained:
             weight_path = weights_dir + f"model_{net_type}_{num_tasks}.{i}.pt"
             models[-1].load_state_dict(torch.load(weight_path))
@@ -64,7 +69,7 @@ def get_mixture_model(num_tasks, weights_dir, net_type='lenet', include_last_lay
     """
     Current implementation is based on average value of weights
     """
-    net = getModel(net_type, 1, 5)
+    net = getBayesianModel(net_type, 1, 5)
     if not include_last_layer:
         net.fc3 = Pass()
 
