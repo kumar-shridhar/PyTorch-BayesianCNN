@@ -9,6 +9,7 @@ import torch.nn as nn
 from torch.optim import Adam
 
 import data
+import utils
 import metrics
 import config_frequentist as cfg
 from models.NonBayesianModels.AlexNet import AlexNet
@@ -83,6 +84,8 @@ def run(dataset, net_type):
     optimizer = Adam(net.parameters(), lr=lr)
     valid_loss_min = np.Inf
     for epoch in range(1, n_epochs+1):
+        utils.adjust_learning_rate(optimizer, metrics.lr_linear(epoch, 0, n_epochs, lr))
+
         train_loss, train_acc = train_model(net, optimizer, criterion, train_loader)
         valid_loss, valid_acc = validate_model(net, criterion, valid_loader)
 
