@@ -37,20 +37,17 @@ def getDataset(dataset):
     transform_split_mnist = transforms.Compose([
         transforms.ToPILImage(),
         transforms.Resize((32, 32)),
-        transforms.RandomRotation(10),
         transforms.ToTensor(),
         ])
 
     transform_mnist = transforms.Compose([
         transforms.Resize((32, 32)),
-        transforms.RandomRotation(10),
         transforms.ToTensor(),
         ])
 
     transform_cifar = transforms.Compose([
         transforms.Resize((32, 32)),
         transforms.RandomHorizontalFlip(),
-        transforms.RandomRotation(10),
         transforms.ToTensor(),
         ])
 
