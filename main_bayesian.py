@@ -59,7 +59,8 @@ def train_model(net, optimizer, criterion, trainloader, num_ens=1):
         kl_list.append(kl.item())
         log_outputs = utils.logmeanexp(outputs, dim=2)
 
-        loss = criterion(log_outputs, labels, kl)
+        beta = metrics.get_beta(i-1, len(trainloader), 0.1)
+        loss = criterion(log_outputs, labels, kl, beta)
         loss.backward()
         optimizer.step()
 
@@ -84,7 +85,9 @@ def validate_model(net, criterion, validloader, num_ens=1):
             outputs[:, :, j] = F.log_softmax(net_out, dim=1).data
 
         log_outputs = utils.logmeanexp(outputs, dim=2)
-        valid_loss += criterion(log_outputs, labels, kl).item()
+
+        beta = metrics.get_beta(i-1, len(validloader), 0.1)
+        valid_loss += criterion(log_outputs, labels, kl, beta).item()
         accs.append(metrics.acc(log_outputs, labels))
 
     return valid_loss/len(validloader), np.mean(accs)
