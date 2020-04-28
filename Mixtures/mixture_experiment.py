@@ -52,6 +52,34 @@ def initiate_experiment(experiment):
 
 
 @initiate_experiment
+def experiment_regular_prediction_bayesian(weights_dir=None, num_ens=10):
+    num_tasks = 2
+    weights_dir = "checkpoints/MNIST/bayesian/splitted/2-tasks/" if weights_dir is None else weights_dir
+
+    loaders1, loaders2 = get_splitmnist_dataloaders(num_tasks)
+    net1, net2 = get_splitmnist_models(num_tasks, bayesian=True, pretrained=True, weights_dir=weights_dir)
+    net1.cuda()
+    net2.cuda()
+
+    print("Model-1, Loader-1:", predict_regular(net1, loaders1[1], bayesian=True, num_ens=num_ens))
+    print("Model-2, Loader-2:", predict_regular(net2, loaders2[1], bayesian=True, num_ens=num_ens))
+
+
+@initiate_experiment
+def experiment_regular_prediction_frequentist(weights_dir=None):
+    num_tasks = 2
+    weights_dir = "checkpoints/MNIST/frequentist/splitted/2-tasks/" if weights_dir is None else weights_dir
+
+    loaders1, loaders2 = get_splitmnist_dataloaders(num_tasks)
+    net1, net2 = get_splitmnist_models(num_tasks, bayesian=False, pretrained=True, weights_dir=weights_dir)
+    net1.cuda()
+    net2.cuda()
+
+    print("Model-1, Loader-1:", predict_regular(net1, loaders1[1], bayesian=False))
+    print("Model-2, Loader-2:", predict_regular(net2, loaders2[1], bayesian=False))
+
+
+@initiate_experiment
 def experiment_average_weights_mixture_model():
     num_tasks = 2
     weights_dir = "checkpoints/MNIST/bayesian/splitted/2-tasks/"
@@ -118,20 +146,5 @@ def experiment_simultaneous_without_mixture_model_with_uncertainty():
     print("Both Models, Loader-2:", predict_using_epistemic_uncertainty_without_mixture_model(net1, net2, loaders2[1]))
 
 
-@initiate_experiment
-def experiment_simple_bayesian_model_with_uncertainty():
-    num_tasks = 2
-    weights_dir = "checkpoints/MNIST/bayesian/splitted/2-tasks/"
-
-    loaders1, loaders2 = get_splitmnist_dataloaders(num_tasks)
-    net1, net2 = get_splitmnist_models(num_tasks, True, weights_dir)
-    net1.cuda()
-    net2.cuda()
-
-    print("Model-1, Loader-1:", calculate_accuracy(net1, loaders1[1]))
-    print("Model-2, Loader-2:", calculate_accuracy(net2, loaders2[1]))
-    print("Model-1-Uncertainty, Loader-1:", predict_using_epistemic_uncertainty_single_model(net1, loaders1[1]))
-    print("Model-2-Uncertainty, Loader-2:", predict_using_epistemic_uncertainty_single_model(net2, loaders2[1]))
-
 if __name__ == '__main__':
-    experiment_average_weights_mixture_model()
+    experiment_regular_prediction_frequentist()

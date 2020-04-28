@@ -91,21 +91,23 @@ def get_mixture_model(num_tasks, weights_dir, net_type='lenet', include_last_lay
     return net
 
 
-def calculate_accuracy(net, validloader, offset=0, num_ens=1):
+def predict_regular(net, validloader, bayesian=True, num_ens=10):
     net.eval()
     accs = []
 
     for i, (inputs, labels) in enumerate(validloader):
         inputs, labels = inputs.to(device), labels.to(device)
-        outputs = torch.zeros(inputs.shape[0], net.num_classes, num_ens).to(device)
-        kl = 0.0
-        for j in range(num_ens):
-            net_out, _kl = net(inputs)
-            kl += _kl
-            outputs[:, :, j] = F.log_softmax(net_out, dim=1).data
+        if bayesian:
+            outputs = torch.zeros(inputs.shape[0], net.num_classes, num_ens).to(device)
+            for j in range(num_ens):
+                net_out, _ = net(inputs)
+                outputs[:, :, j] = F.log_softmax(net_out, dim=1).data
 
-        log_outputs = utils.logmeanexp(outputs, dim=2)
-        accs.append(metrics.acc(log_outputs, labels))
+            log_outputs = utils.logmeanexp(outputs, dim=2)
+            accs.append(metrics.acc(log_outputs, labels))
+        else:
+            output = net(inputs)
+            accs.append(metrics.acc(output.detach(), labels))
 
     return np.mean(accs)
 
