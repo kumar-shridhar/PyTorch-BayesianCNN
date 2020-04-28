@@ -55,7 +55,6 @@ def get_uncertainty_per_image(model, input_image, T=15, normalized=False):
 
 
 def get_uncertainty_per_batch(model, batch, T=15, normalized=False):
-    total_epistemic = 0.0
     batch_predictions = []
     net_outs = []
     batches = batch.unsqueeze(0).repeat(T, 1, 1, 1, 1)
