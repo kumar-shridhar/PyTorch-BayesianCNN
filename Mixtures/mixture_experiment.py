@@ -37,7 +37,7 @@ def print_to_logfile(file):
 
 def initiate_experiment(experiment):
 
-    def decorator():
+    def decorator(*args, **kwargs):
         log_file_dir = "experiments/mixtures/"
         log_file = log_file_dir + experiment.__name__ + ".txt"
         if not os.path.exists(log_file):
@@ -46,7 +46,10 @@ def initiate_experiment(experiment):
             print("Performing experiment:", experiment.__name__)
             print("Date-Time:", datetime.datetime.now())
             print("\n", end="")
-            experiment()
+            print("Args:", args)
+            print("Kwargs:", kwargs)
+            print("\n", end="")
+            experiment(*args, **kwargs)
             print("\n\n", end="")
     return decorator
 
