@@ -83,7 +83,7 @@ def experiment_regular_prediction_frequentist(weights_dir=None):
 
 
 @initiate_experiment
-def experiment_average_weights_mixture_model():
+def wip_experiment_average_weights_mixture_model():
     num_tasks = 2
     weights_dir = "checkpoints/MNIST/bayesian/splitted/2-tasks/"
 
@@ -103,7 +103,7 @@ def experiment_average_weights_mixture_model():
 
 
 @initiate_experiment
-def experiment_simultaneous_average_weights_mixture_model_with_uncertainty():
+def wip_experiment_simultaneous_average_weights_mixture_model_with_uncertainty():
     num_tasks = 2
     weights_dir = "checkpoints/MNIST/bayesian/splitted/2-tasks/"
 

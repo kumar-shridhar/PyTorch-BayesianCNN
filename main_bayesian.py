@@ -30,7 +30,7 @@ def getModel(net_type, inputs, outputs):
         raise ValueError('Network should be either [LeNet / AlexNet / 3Conv3FC')
 
 
-def train_model(net, optimizer, criterion, trainloader, num_ens=1):
+def train_model(net, optimizer, criterion, trainloader, num_ens=1, beta_type=0.1):
     net.train()
     training_loss = 0.0
     accs = []
@@ -59,7 +59,7 @@ def train_model(net, optimizer, criterion, trainloader, num_ens=1):
         kl_list.append(kl.item())
         log_outputs = utils.logmeanexp(outputs, dim=2)
 
-        beta = metrics.get_beta(i-1, len(trainloader), 0.1)
+        beta = metrics.get_beta(i-1, len(trainloader), beta_type)
         loss = criterion(log_outputs, labels, kl, beta)
         loss.backward()
         optimizer.step()
@@ -103,6 +103,7 @@ def run(dataset, net_type):
     num_workers = cfg.num_workers
     valid_size = cfg.valid_size
     batch_size = cfg.batch_size
+    beta_type = cfg.beta_type
 
     trainset, testset, inputs, outputs = data.getDataset(dataset)
     train_loader, valid_loader, test_loader = data.getDataloader(
@@ -122,7 +123,7 @@ def run(dataset, net_type):
         cfg.curr_epoch_no = epoch
         utils.adjust_learning_rate(optimizer, metrics.lr_linear(epoch, 0, n_epochs, lr_start))
 
-        train_loss, train_acc, train_kl = train_model(net, optimizer, criterion, train_loader, num_ens=train_ens)
+        train_loss, train_acc, train_kl = train_model(net, optimizer, criterion, train_loader, num_ens=train_ens, beta_type=beta_type)
         valid_loss, valid_acc = validate_model(net, criterion, valid_loader, num_ens=valid_ens)
 
         print('Epoch: {} \tTraining Loss: {:.4f} \tTraining Accuracy: {:.4f} \tValidation Loss: {:.4f} \tValidation Accuracy: {:.4f} \ttrain_kl_div: {:.4f}'.format(
