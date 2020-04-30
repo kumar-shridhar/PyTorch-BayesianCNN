@@ -7,63 +7,62 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import Parameter
 
-import utils
-import metrics
-import config_bayesian as cfg
-from .misc import ModuleWrapper
+from metrics import calculate_kl as KL_DIV
+from .misc import ModuleWrapper, Posterior
 
 
 class BBBLinear(ModuleWrapper):
-    
-    def __init__(self, in_features, out_features, alpha_shape=(1, 1), bias=True, name='BBBLinear'):
+    def __init__(self, in_features, out_features, bias=True):
         super(BBBLinear, self).__init__()
         self.in_features = in_features
         self.out_features = out_features
-        self.alpha_shape = alpha_shape
-        self.W = Parameter(torch.Tensor(out_features, in_features))
-        self.log_alpha = Parameter(torch.Tensor(*alpha_shape))
-        if bias:
-            self.bias = Parameter(torch.Tensor(1, out_features))
+        self.use_bias = bias
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+        self.prior_mu = 0
+        self.prior_sigma = 0.1
+
+        self.W_mu = Parameter(torch.empty((out_features, in_features), device=self.device))
+        self.W_rho = Parameter(torch.empty((out_features, in_features), device=self.device))
+
+        if self.use_bias:
+            self.bias_mu = Parameter(torch.empty((out_features), device=self.device))
+            self.bias_rho = Parameter(torch.empty((out_features), device=self.device))
         else:
-            self.register_parameter('bias', None)
+            self.register_parameter('bias_mu', None)
+            self.register_parameter('bias_rho', None)
+
+        self.weight_posterior = None
+        self.bias_posterior = None
+
         self.reset_parameters()
-        self.kl_value = metrics.calculate_kl
-        self.name = name
 
     def reset_parameters(self):
-        stdv = 1. / math.sqrt(self.W.size(1))
-        self.W.data.uniform_(-stdv, stdv)
-        self.log_alpha.data.fill_(-5.0)
-        if self.bias is not None:
-            self.bias.data.zero_()
+        self.W_mu.data.normal_(0, 0.1)
+        self.W_rho.data.normal_(-3, 0.1)
 
-    def forward(self, x):
+        if self.use_bias:
+            self.bias_mu.data.normal_(0, 0.1)
+            self.bias_rho.data.normal_(-3, 0.1)
 
-        mean = F.linear(x, self.W)
-        if self.bias is not None:
-            mean = mean + self.bias
+    def forward(self, input, sample=True):
+        if self.training or self.sample:
+            self.weight_posterior = Posterior(self.W_mu, self.W_rho, self.device)
+            weight = self.weight_posterior.sample()
 
-        sigma = torch.exp(self.log_alpha) * self.W * self.W
-
-        std = torch.sqrt(1e-16 + F.linear(x * x, sigma))
-        if self.training:
-            epsilon = std.data.new(std.size()).normal_()
+            if self.use_bias:
+                self.bias_posterior = Posterior(self.bias_mu, self.bias_rho, self.device)
+                bias = self.bias_posterior.sample()
+            else:
+                bias = None
         else:
-            epsilon = 0.0
-        # Local reparameterization trick
-        out = mean + std * epsilon
+            weight = self.W_mu
+            bias = self.bias_mu if self.use_bias else None
 
-        if cfg.record_mean_var and cfg.record_now and self.training and (cfg.record_layers is None or self.name in cfg.record_layers):
-            utils.save_array_to_file(mean.cpu().detach().numpy(), self.mean_var_path, "mean")
-            utils.save_array_to_file(std.cpu().detach().numpy(), self.mean_var_path, "std")
-
-        return out
+        return F.linear(input, weight, bias)
 
     def kl_loss(self):
-        return self.W.nelement() * self.kl_value(self.log_alpha) / self.log_alpha.nelement()
-
-    @property
-    def mean_var_path(self):
-        assert cfg.record_mean_var
-        return cfg.mean_var_dir + f"{self.name}.txt"
-
+        kl = KL_DIV(self.prior_mu, self.prior_sigma, self.W_mu, self.weight_posterior.sigma)
+        if self.use_bias:
+            kl += KL_DIV(self.prior_mu, self.prior_sigma, self.bias_mu, self.bias_posterior.sigma)
+        return kl
