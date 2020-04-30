@@ -52,5 +52,5 @@ class Posterior(nn.Module):
         return torch.distributions.Normal(0, 1).sample(self.mu.size()).to(self.device)
 
     def sample(self):
-        posterior_sample = self.mu + self.sigma * self.eps
+        posterior_sample = self.mu.to(self.device) + self.sigma.to(self.device) * self.eps
         return posterior_sample

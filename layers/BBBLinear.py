@@ -46,7 +46,7 @@ class BBBLinear(ModuleWrapper):
             self.bias_rho.data.normal_(-3, 0.1)
 
     def forward(self, input, sample=True):
-        if self.training or self.sample:
+        if self.training or sample:
             self.weight_posterior = Posterior(self.W_mu, self.W_rho, self.device)
             weight = self.weight_posterior.sample()
 
