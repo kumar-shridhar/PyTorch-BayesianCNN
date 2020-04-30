@@ -34,23 +34,3 @@ class FlattenLayer(ModuleWrapper):
 
     def forward(self, x):
         return x.view(-1, self.num_features)
-
-
-class Posterior(nn.Module):
-    def __init__(self, mu, rho, device):
-        super(Posterior, self).__init__()
-        self.mu = mu
-        self.rho = rho
-        self.device = device
-
-    @property
-    def sigma(self):
-        return torch.log1p(torch.exp(self.rho))
-
-    @property
-    def eps(self):
-        return torch.distributions.Normal(0, 1).sample(self.mu.size()).to(self.device)
-
-    def sample(self):
-        posterior_sample = self.mu.to(self.device) + self.sigma.to(self.device) * self.eps
-        return posterior_sample

@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from torch.nn import Parameter
 
 from metrics import calculate_kl as KL_DIV
-from .misc import ModuleWrapper, Posterior
+from .misc import ModuleWrapper
 
 
 class BBBLinear(ModuleWrapper):
@@ -32,9 +32,6 @@ class BBBLinear(ModuleWrapper):
             self.register_parameter('bias_mu', None)
             self.register_parameter('bias_rho', None)
 
-        self.weight_posterior = None
-        self.bias_posterior = None
-
         self.reset_parameters()
 
     def reset_parameters(self):
@@ -47,12 +44,14 @@ class BBBLinear(ModuleWrapper):
 
     def forward(self, input, sample=True):
         if self.training or sample:
-            self.weight_posterior = Posterior(self.W_mu, self.W_rho, self.device)
-            weight = self.weight_posterior.sample()
+            W_eps = torch.empty(self.W_mu.size()).normal_(0, 1).to(self.device)
+            self.W_sigma = torch.log1p(torch.exp(self.W_rho))
+            weight = self.W_mu + W_eps * self.W_sigma
 
             if self.use_bias:
-                self.bias_posterior = Posterior(self.bias_mu, self.bias_rho, self.device)
-                bias = self.bias_posterior.sample()
+                bias_eps = torch.empty(self.bias_mu.size()).normal_(0, 1).to(self.device)
+                self.bias_sigma = torch.log1p(torch.exp(self.bias_rho))
+                bias = self.bias_mu + bias_eps * self.bias_sigma
             else:
                 bias = None
         else:
@@ -62,7 +61,7 @@ class BBBLinear(ModuleWrapper):
         return F.linear(input, weight, bias)
 
     def kl_loss(self):
-        kl = KL_DIV(self.prior_mu, self.prior_sigma, self.W_mu, self.weight_posterior.sigma)
+        kl = KL_DIV(self.prior_mu, self.prior_sigma, self.W_mu, self.W_sigma)
         if self.use_bias:
-            kl += KL_DIV(self.prior_mu, self.prior_sigma, self.bias_mu, self.bias_posterior.sigma)
+            kl += KL_DIV(self.prior_mu, self.prior_sigma, self.bias_mu, self.bias_sigma)
         return kl
