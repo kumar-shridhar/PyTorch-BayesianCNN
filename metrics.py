@@ -24,8 +24,9 @@ def acc(outputs, targets):
     return np.mean(outputs.cpu().numpy().argmax(axis=1) == targets.data.cpu().numpy())
 
 
-def calculate_kl(log_alpha):
-    return 0.5 * torch.sum(torch.log1p(torch.exp(-log_alpha)))
+def calculate_kl(mu_p, sig_p, mu_q, sig_q):
+    kl = 0.5 * (2 * torch.log(sig_p / sig_q) - 1 + (sig_q / sig_p).pow(2) + ((mu_p - mu_q) / sig_p).pow(2)).sum()
+    return kl
 
 
 def get_beta(batch_idx, m, beta_type):

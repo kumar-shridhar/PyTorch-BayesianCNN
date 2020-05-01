@@ -71,7 +71,7 @@ def train_model(net, optimizer, criterion, trainloader, num_ens=1, beta_type=0.1
 
 def validate_model(net, criterion, validloader, num_ens=1):
     """Calculate ensemble accuracy and NLL Loss"""
-    net.eval()
+    net.train()
     valid_loss = 0.0
     accs = []
 

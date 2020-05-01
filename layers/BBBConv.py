@@ -8,15 +8,15 @@ import torch.nn.functional as F
 from torch.nn import Parameter
 
 import utils
-import metrics
+from metrics import KL_DIV
 import config_bayesian as cfg
 from .misc import ModuleWrapper
 
 
 class BBBConv2d(ModuleWrapper):
     
-    def __init__(self, in_channels, out_channels, kernel_size, alpha_shape, stride=1,
-                 padding=0, dilation=1, bias=True, name='BBBConv2d'):
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1,
+                 padding=0, dilation=1, bias=True):
         super(BBBConv2d, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -24,55 +24,51 @@ class BBBConv2d(ModuleWrapper):
         self.stride = stride
         self.padding = padding
         self.dilation = dilation
-        self.alpha_shape = alpha_shape
         self.groups = 1
-        self.weight = Parameter(torch.Tensor(
-            out_channels, in_channels, *self.kernel_size))
-        if bias:
-            self.bias = Parameter(torch.Tensor(1, out_channels, 1, 1))
+        self.use_bias = bias
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+        self.prior_mu = 0
+        self.prior_sigma = 0.1
+
+        self.W_mu = Parameter(torch.Tensor(out_channels, in_channels, *self.kernel_size))
+        self.W_sigma = Parameter(torch.Tensor(out_channels, in_channels, *self.kernel_size))
+        if self.use_bias:
+            self.bias_mu = Parameter(torch.Tensor(out_channels))
+            self.bias_sigma = Parameter(torch.Tensor(out_channels))
         else:
-            self.register_parameter('bias', None)
-        self.out_bias = lambda input, kernel: F.conv2d(input, kernel, self.bias, self.stride, self.padding, self.dilation, self.groups)
-        self.out_nobias = lambda input, kernel: F.conv2d(input, kernel, None, self.stride, self.padding, self.dilation, self.groups)
-        self.log_alpha = Parameter(torch.Tensor(*alpha_shape))
+            self.register_parameter('bias_mu', None)
+            self.register_parameter('bias_sigma', None)
+
         self.reset_parameters()
-        self.name = name
 
     def reset_parameters(self):
-        n = self.in_channels
-        for k in self.kernel_size:
-            n *= k
-        stdv = 1. / math.sqrt(n)
-        self.weight.data.uniform_(-stdv, stdv)
-        if self.bias is not None:
-            self.bias.data.uniform_(-stdv, stdv)
-        self.log_alpha.data.fill_(-5.0)
+        self.W_mu.data.normal_(0, 0.1)
+        self.W_sigma.data.normal_(0.05, 0.1)
+
+        if self.use_bias:
+            self.bias_mu.data.normal_(0, 0.1)
+            self.bias_sigma.data.normal_(0.05, 0.1)
 
     def forward(self, x):
 
-        mean = self.out_bias(x, self.weight)
+        W_var = 1e-6 + F.softplus(self.W_sigma) ** 2
+        bias_var = 1e-6 + F.softplus(self.bias_sigma) ** 2
 
-        sigma = torch.exp(self.log_alpha) * self.weight * self.weight
+        act_mu = F.conv2d(
+            x, self.W_mu, self.bias_mu, self.stride, self.padding, self.dilation, self.groups)
+        act_var = 1e-16 + F.conv2d(
+            x ** 2, W_var, bias_std, self.stride, self.padding, self.dilation, self.groups)
+        act_std = torch.sqrt(act_var)
 
-        std = torch.sqrt(1e-16 + self.out_nobias(x * x, sigma))
-        if self.training:
-            epsilon = std.data.new(std.size()).normal_()
+        if self.training or sample:
+            eps = torch.empty(act_mu.size()).normal_(0, 1).to(self.device)
+            return act_mean + act_std * eps
         else:
-            epsilon = 0.0
-
-        # Local reparameterization trick
-        out = mean + std * epsilon
-        
-        if cfg.record_mean_var and cfg.record_now and self.training and (cfg.record_layers is None or self.name in cfg.record_layers):
-            utils.save_array_to_file(mean.cpu().detach().numpy(), self.mean_var_path, "mean")
-            utils.save_array_to_file(std.cpu().detach().numpy(), self.mean_var_path, "std")
-
-        return out
+            return act_mean
 
     def kl_loss(self):
-        return self.weight.nelement() / self.log_alpha.nelement() * metrics.calculate_kl(self.log_alpha)
-
-    @property
-    def mean_var_path(self):
-        assert cfg.record_mean_var
-        return cfg.mean_var_dir + f"{self.name}.txt"
+        kl = KL_DIV(self.prior_mu, self.prior_sigma, self.W_mu, self.W_sigma)
+        if self.use_bias:
+            kl += KL_DIV(self.prior_mu, self.prior_sigma, self.bias_mu, self.bias_sigma)
+        return kl
