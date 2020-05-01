@@ -8,7 +8,7 @@ import torch.nn.functional as F
 from torch.nn import Parameter
 
 import utils
-from metrics import KL_DIV
+from metrics import calculate_kl as KL_DIV
 import config_bayesian as cfg
 from .misc import ModuleWrapper
 
@@ -32,40 +32,44 @@ class BBBConv2d(ModuleWrapper):
         self.prior_sigma = 0.1
 
         self.W_mu = Parameter(torch.Tensor(out_channels, in_channels, *self.kernel_size))
-        self.W_sigma = Parameter(torch.Tensor(out_channels, in_channels, *self.kernel_size))
+        self.W_rho = Parameter(torch.Tensor(out_channels, in_channels, *self.kernel_size))
         if self.use_bias:
             self.bias_mu = Parameter(torch.Tensor(out_channels))
-            self.bias_sigma = Parameter(torch.Tensor(out_channels))
+            self.bias_rho = Parameter(torch.Tensor(out_channels))
         else:
             self.register_parameter('bias_mu', None)
-            self.register_parameter('bias_sigma', None)
+            self.register_parameter('bias_rho', None)
 
         self.reset_parameters()
 
     def reset_parameters(self):
         self.W_mu.data.normal_(0, 0.1)
-        self.W_sigma.data.normal_(0.05, 0.1)
+        self.W_rho.data.normal_(-3, 0.1)
 
         if self.use_bias:
             self.bias_mu.data.normal_(0, 0.1)
-            self.bias_sigma.data.normal_(0.05, 0.1)
+            self.bias_rho.data.normal_(-3, 0.1)
 
     def forward(self, x):
 
-        W_var = 1e-6 + F.softplus(self.W_sigma) ** 2
-        bias_var = 1e-6 + F.softplus(self.bias_sigma) ** 2
+        self.W_sigma = torch.log1p(torch.exp(self.W_rho))
+        if self.use_bias:
+            self.bias_sigma = torch.log1p(torch.exp(self.bias_rho))
+            bias_var = self.bias_sigma ** 2
+        else:
+            self.bias_sigma = bias_var = None
 
         act_mu = F.conv2d(
             x, self.W_mu, self.bias_mu, self.stride, self.padding, self.dilation, self.groups)
         act_var = 1e-16 + F.conv2d(
-            x ** 2, W_var, bias_std, self.stride, self.padding, self.dilation, self.groups)
+            x ** 2, self.W_sigma ** 2, bias_var, self.stride, self.padding, self.dilation, self.groups)
         act_std = torch.sqrt(act_var)
 
         if self.training or sample:
             eps = torch.empty(act_mu.size()).normal_(0, 1).to(self.device)
-            return act_mean + act_std * eps
+            return act_mu + act_std * eps
         else:
-            return act_mean
+            return act_mu
 
     def kl_loss(self):
         kl = KL_DIV(self.prior_mu, self.prior_sigma, self.W_mu, self.W_sigma)
