@@ -1,6 +1,6 @@
 ############### Configuration file for Bayesian ###############
 layer_type = 'lrt'
-activation = 'softmax'
+activation_type = 'softplus'
 
 n_epochs = 100
 lr_start = 0.001
