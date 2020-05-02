@@ -48,20 +48,27 @@ def get_splitmnist_dataloaders(num_tasks, return_datasets=False):
     return loaders
 
 
-def get_splitmnist_models(num_tasks, bayesian=True, pretrained=False, weights_dir=None, net_type='lenet'):
+def get_splitmnist_models(num_tasks, bayesian=True, pretrained=False, weights_dir=None,
+                          net_type='lenet', layer_type='lrt', activation_type='softplus'):
     inputs = 1
     outputs = 10 // num_tasks
+    if bayesian:
+        assert layer_type
+        assert activation_type
     models = []
     if pretrained:
         assert weights_dir
     for i in range(1, num_tasks + 1):
         if bayesian:
-            model = getBayesianModel(net_type, inputs, outputs)
+            model = getBayesianModel(net_type, inputs, outputs, layer_type, activation_type)
         else:
             model = getFrequentistModel(net_type, inputs, outputs)
         models.append(model)
         if pretrained:
-            weight_path = weights_dir + f"model_{net_type}_{num_tasks}.{i}.pt"
+            if bayesian:
+                weight_path = weights_dir + f"model_{net_type}_{layer_type}_{activation_type}_{num_tasks}.{i}.pt"
+            else:
+                weight_path = weights_dir + f"model_{net_type}_{num_tasks}.{i}.pt"
             models[-1].load_state_dict(torch.load(weight_path))
     return models
 
@@ -96,7 +103,10 @@ def predict_regular(net, validloader, bayesian=True, num_ens=10):
     """
     For both Bayesian and Frequentist models
     """
-    net.eval()
+    if bayesian:
+        net.train()
+    else:
+        net.eval()
     accs = []
 
     for i, (inputs, labels) in enumerate(validloader):

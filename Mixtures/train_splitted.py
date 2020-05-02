@@ -6,7 +6,7 @@ import argparse
 import torch
 from torch import nn
 import numpy as np
-from torch.optim import Adam
+from torch.optim import Adam, lr_scheduler
 
 import utils
 import metrics
@@ -23,6 +23,8 @@ def train_splitted(num_tasks, bayesian=True, net_type='lenet'):
     assert 10 % num_tasks == 0
 
     # Hyper Parameter settings
+    layer_type = cfg.layer_type
+    activation_type = cfg.activation_type
     train_ens = cfg.train_ens
     valid_ens = cfg.valid_ens
     n_epochs = cfg.n_epochs
@@ -36,7 +38,8 @@ def train_splitted(num_tasks, bayesian=True, net_type='lenet'):
         os.makedirs(ckpt_dir, exist_ok=True)
 
     loaders, datasets = mix_utils.get_splitmnist_dataloaders(num_tasks, return_datasets=True)
-    models = mix_utils.get_splitmnist_models(num_tasks, bayesian=bayesian, pretrained=False, net_type=net_type)
+    models = mix_utils.get_splitmnist_models(num_tasks, bayesian=bayesian, pretrained=False, net_type=net_type,
+                                             layer_type=layer_type, activation_type=activation_type)
 
     for task in range(1, num_tasks + 1):
         print(f"Training task-{task}..")
@@ -44,14 +47,16 @@ def train_splitted(num_tasks, bayesian=True, net_type='lenet'):
         train_loader, valid_loader, _ = loaders[task-1]
         net = models[task-1]
         net = net.to(device)
-        ckpt_name = ckpt_dir + f"model_{net_type}_{num_tasks}.{task}.pt"
+        if bayesian:
+            ckpt_name = ckpt_dir + f"model_{net_type}_{layer_type}_{activation_type}_{num_tasks}.{task}.pt"
+        else:
+            ckpt_name = ckpt_dir + f"model_{net_type}_{num_tasks}.{task}.pt"
 
         criterion = (metrics.ELBO(len(trainset)) if bayesian else nn.CrossEntropyLoss()).to(device)
         optimizer = Adam(net.parameters(), lr=lr_start)
+        lr_sched = lr_scheduler.ReduceLROnPlateau(optimizer, patience=6, verbose=True)
         valid_loss_max = np.Inf
         for epoch in range(n_epochs):  # loop over the dataset multiple times
-            utils.adjust_learning_rate(optimizer, metrics.lr_linear(epoch, 0, n_epochs, lr_start))
-
             if bayesian:
                 train_loss, train_acc, train_kl = train_bayesian(net, optimizer, criterion, train_loader, num_ens=train_ens)
                 valid_loss, valid_acc = validate_bayesian(net, criterion, valid_loader, num_ens=valid_ens)
@@ -62,6 +67,8 @@ def train_splitted(num_tasks, bayesian=True, net_type='lenet'):
                 valid_loss, valid_acc = validate_frequentist(net, criterion, valid_loader)
                 print('Epoch: {} \tTraining Loss: {:.4f} \tTraining Accuracy: {:.4f} \tValidation Loss: {:.4f} \tValidation Accuracy: {:.4f}'.format(
                     epoch, train_loss, train_acc, valid_loss, valid_acc))
+
+            lr_sched.step(valid_loss)
 
             # save model if validation accuracy has increased
             if valid_loss <= valid_loss_max:
