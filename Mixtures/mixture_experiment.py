@@ -7,7 +7,7 @@ import torch
 import contextlib
 
 from utils_mixture import *
-from layers.BBBLinear import BBBLinear
+# from layers.BBBLinear import BBBLinear
 
 
 @contextlib.contextmanager
@@ -55,31 +55,32 @@ def initiate_experiment(experiment):
 
 
 @initiate_experiment
-def experiment_regular_prediction_bayesian(weights_dir=None, num_ens=10):
-    num_tasks = 2
-    weights_dir = "checkpoints/MNIST/bayesian/splitted/2-tasks/" if weights_dir is None else weights_dir
+def experiment_regular_prediction_bayesian(num_tasks, net_type='lenet', layer_type='lrt', activation_type='softplus', num_ens=25, comment=None):
 
-    loaders1, loaders2 = get_splitmnist_dataloaders(num_tasks)
-    net1, net2 = get_splitmnist_models(num_tasks, bayesian=True, pretrained=True, weights_dir=weights_dir)
-    net1.cuda()
-    net2.cuda()
+    weights_dir = "checkpoints/MNIST/bayesian/splitted/{}-tasks/".format(num_tasks)
 
-    print("Model-1, Task-1-Dataset=> Accuracy:", predict_regular(net1, loaders1[1], bayesian=True, num_ens=num_ens))
-    print("Model-2, Task-2-Dataset=> Accuracy:", predict_regular(net2, loaders2[1], bayesian=True, num_ens=num_ens))
+    loaders = get_splitmnist_dataloaders(num_tasks)
+    nets = get_splitmnist_models(num_tasks, True, True, weights_dir, net_type, layer_type, activation_type)
+
+    for i in range(num_tasks):
+        net = nets[i]
+        net.cuda()
+        loader = loaders[i][1]  # valid_loader
+        print("Model-{}, Task-{}-Dataset=> Accuracy: {:.3}".format(i + 1, i + 1, predict_regular(net, loader, True, num_ens)))
 
 
 @initiate_experiment
-def experiment_regular_prediction_frequentist(weights_dir=None):
-    num_tasks = 2
-    weights_dir = "checkpoints/MNIST/frequentist/splitted/2-tasks/" if weights_dir is None else weights_dir
+def experiment_regular_prediction_frequentist(num_tasks, net_type='lenet', comment=None):
+    weights_dir = "checkpoints/MNIST/frequentist/splitted/{}-tasks/".format(num_tasks)
 
-    loaders1, loaders2 = get_splitmnist_dataloaders(num_tasks)
-    net1, net2 = get_splitmnist_models(num_tasks, bayesian=False, pretrained=True, weights_dir=weights_dir)
-    net1.cuda()
-    net2.cuda()
+    loaders = get_splitmnist_dataloaders(num_tasks)
+    nets = get_splitmnist_models(num_tasks, False, True, weights_dir, net_type)
 
-    print("Model-1, Task-1-Dataset=> Accuracy:", predict_regular(net1, loaders1[1], bayesian=False))
-    print("Model-2, Task-2-Dataset=> Accuracy:", predict_regular(net2, loaders2[1], bayesian=False))
+    for i in range(num_tasks):
+        net = nets[i]
+        net.cuda()
+        loader = loaders[i][1]  # valid_loader
+        print("Model-{}, Task-{}-Dataset=> Accuracy: {:.3}".format(i + 1, i + 1, predict_regular(net, loader, False)))
 
 
 @initiate_experiment
