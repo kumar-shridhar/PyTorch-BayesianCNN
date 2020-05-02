@@ -19,13 +19,13 @@ from models.BayesianModels.BayesianLeNet import BBBLeNet
 # CUDA settings
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-def getModel(net_type, inputs, outputs):
+def getModel(net_type, inputs, outputs, layer_type):
     if (net_type == 'lenet'):
-        return BBBLeNet(outputs,inputs)
+        return BBBLeNet(outputs, inputs, layer_type)
     elif (net_type == 'alexnet'):
-        return BBBAlexNet(outputs, inputs)
+        return BBBAlexNet(outputs, inputs, layer_type)
     elif (net_type == '3conv3fc'):
-        return BBB3Conv3FC(outputs,inputs)
+        return BBB3Conv3FC(outputs, inputs, layer_type)
     else:
         raise ValueError('Network should be either [LeNet / AlexNet / 3Conv3FC')
 
@@ -96,6 +96,7 @@ def validate_model(net, criterion, validloader, num_ens=1):
 def run(dataset, net_type):
 
     # Hyper Parameter settings
+    layer_type = cfg.layer_type
     train_ens = cfg.train_ens
     valid_ens = cfg.valid_ens
     n_epochs = cfg.n_epochs
@@ -108,10 +109,10 @@ def run(dataset, net_type):
     trainset, testset, inputs, outputs = data.getDataset(dataset)
     train_loader, valid_loader, test_loader = data.getDataloader(
         trainset, testset, valid_size, batch_size, num_workers)
-    net = getModel(net_type, inputs, outputs).to(device)
+    net = getModel(net_type, inputs, outputs, layer_type).to(device)
 
     ckpt_dir = f'checkpoints/{dataset}/bayesian'
-    ckpt_name = f'checkpoints/{dataset}/bayesian/model_{net_type}.pt'
+    ckpt_name = f'checkpoints/{dataset}/bayesian/model_{net_type}_{layer_type}.pt'
 
     if not os.path.exists(ckpt_dir):
         os.makedirs(ckpt_dir, exist_ok=True)
