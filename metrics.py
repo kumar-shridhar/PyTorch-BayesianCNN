@@ -14,10 +14,10 @@ class ELBO(nn.Module):
         return F.nll_loss(input, target, reduction='mean') * self.train_size + beta * kl
 
 
-def lr_linear(epoch_num, decay_start, total_epochs, start_value):
-    if epoch_num < decay_start:
-        return start_value
-    return start_value*float(total_epochs-epoch_num)/float(total_epochs-decay_start)
+# def lr_linear(epoch_num, decay_start, total_epochs, start_value):
+#     if epoch_num < decay_start:
+#         return start_value
+#     return start_value*float(total_epochs-epoch_num)/float(total_epochs-decay_start)
 
 
 def acc(outputs, targets):

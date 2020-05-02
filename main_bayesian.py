@@ -5,7 +5,7 @@ import argparse
 
 import torch
 import numpy as np
-from torch.optim import Adam
+from torch.optim import Adam, lr_scheduler
 from torch.nn import functional as F
 
 import data
@@ -119,13 +119,14 @@ def run(dataset, net_type):
 
     criterion = metrics.ELBO(len(trainset)).to(device)
     optimizer = Adam(net.parameters(), lr=lr_start)
+    lr_sched = lr_scheduler.ReduceLROnPlateau(optimizer, patience=6, verbose=True)
     valid_loss_max = np.Inf
     for epoch in range(n_epochs):  # loop over the dataset multiple times
         cfg.curr_epoch_no = epoch
-        utils.adjust_learning_rate(optimizer, metrics.lr_linear(epoch, 0, n_epochs, lr_start))
 
         train_loss, train_acc, train_kl = train_model(net, optimizer, criterion, train_loader, num_ens=train_ens, beta_type=beta_type)
         valid_loss, valid_acc = validate_model(net, criterion, valid_loader, num_ens=valid_ens)
+        lr_sched.step(valid_loss)
 
         print('Epoch: {} \tTraining Loss: {:.4f} \tTraining Accuracy: {:.4f} \tValidation Loss: {:.4f} \tValidation Accuracy: {:.4f} \ttrain_kl_div: {:.4f}'.format(
             epoch, train_loss, train_acc, valid_loss, valid_acc, train_kl))

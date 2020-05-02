@@ -6,7 +6,7 @@ import argparse
 import torch
 import numpy as np
 import torch.nn as nn
-from torch.optim import Adam
+from torch.optim import Adam, lr_scheduler
 
 import data
 import utils
@@ -82,12 +82,13 @@ def run(dataset, net_type):
 
     criterion = nn.CrossEntropyLoss()
     optimizer = Adam(net.parameters(), lr=lr)
+    lr_sched = lr_scheduler.ReduceLROnPlateau(optimizer, patience=6, verbose=True)
     valid_loss_min = np.Inf
     for epoch in range(1, n_epochs+1):
-        utils.adjust_learning_rate(optimizer, metrics.lr_linear(epoch, 0, n_epochs, lr))
 
         train_loss, train_acc = train_model(net, optimizer, criterion, train_loader)
         valid_loss, valid_acc = validate_model(net, criterion, valid_loader)
+        lr_sched.step(valid_loss)
 
         train_loss = train_loss/len(train_loader.dataset)
         valid_loss = valid_loss/len(valid_loader.dataset)
