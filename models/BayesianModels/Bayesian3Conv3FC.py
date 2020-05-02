@@ -1,8 +1,8 @@
 import math
 import torch.nn as nn
-from layers.BBBConv import BBBConv2d
-from layers.BBBLinear import BBBLinear
-from layers.misc import FlattenLayer, ModuleWrapper
+from layers import BBB_LRT_Linear, BBB_LRT_Conv2d
+from layers import BBB_MCMF_LRT_Linear, BBB_MCMF_LRT_Conv2d
+from layers import FlattenLayer, ModuleWrapper
 
 class BBB3Conv3FC(ModuleWrapper):
     """
@@ -10,10 +10,19 @@ class BBB3Conv3FC(ModuleWrapper):
     Simple Neural Network having 3 Convolution
     and 3 FC layers with Bayesian layers.
     """
-    def __init__(self, outputs, inputs):
+    def __init__(self, outputs, inputs, layer_type='mcmf_lrt'):
         super(BBB3Conv3FC, self).__init__()
 
         self.num_classes = outputs
+
+        if layer_type=='mcmf_lrt':
+            BBBLinear = BBB_MCMF_LRT_Linear
+            BBBConv2d = BBB_MCMF_LRT_Conv2d
+        elif layer_type=='lrt':
+            BBBLinear = BBB_LRT_Linear
+            BBBConv2d = BBB_LRT_Conv2d
+        else:
+            raise ValueError("Undefined layer_type")
 
         self.conv1 = BBBConv2d(inputs, 32, 5, padding=2, bias=True)
         self.soft1 = nn.Softplus()
