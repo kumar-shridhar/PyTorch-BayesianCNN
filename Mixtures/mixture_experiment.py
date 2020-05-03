@@ -84,37 +84,41 @@ def experiment_regular_prediction_frequentist(num_tasks, net_type='lenet', comme
 
 
 @initiate_experiment
-def experiment_simultaneous_without_mixture_model_with_uncertainty(uncertainty_type="epistemic_softmax", T=25, weights_dir=None):
-    num_tasks = 2
-    weights_dir = "checkpoints/MNIST/bayesian/splitted/2-tasks/" if weights_dir is None else weights_dir
+def experiment_multi_model_with_uncertainty(num_tasks, net_type='lenet', layer_type='lrt', activation_type='softplus',
+                                                                   uncertainty_type="epistemic_softmax", T=25, weights_dir=None, comment=None):
 
-    loaders1, loaders2 = get_splitmnist_dataloaders(num_tasks)
-    net1, net2 = get_splitmnist_models(num_tasks, True, True, weights_dir)
-    net1.cuda()
-    net2.cuda()
+    weights_dir = "checkpoints/MNIST/bayesian/splitted/{}-tasks/".format(num_tasks)
 
-    print("Both Models, Task-1-Dataset=> Accuracy: {:.3}\tModel-1-Preferred: {:.3}\tModel-2-Preferred: {:.3}\t" \
-          "Task-1-Dataset-Uncertainty: {:.3}\tTask-2-Dataset-Uncertainty: {:.3}".format(
-        *predict_using_uncertainty_separate_models(net1, net2, loaders1[1], uncertainty_type=uncertainty_type, T=T)))
-    print("Both Models, Task-2-Dataset=> Accuracy: {:.3}\tModel-1-Preferred: {:.3}\tModel-2-Preferred: {:.3}\t" \
-          "Task-1-Dataset-Uncertainty: {:.3}\tTask-2-Dataset-Uncertainty: {:.3}".format(
-        *predict_using_uncertainty_separate_models(net1, net2, loaders2[1], uncertainty_type=uncertainty_type, T=T)))
+    loaders = get_splitmnist_dataloaders(num_tasks)
+    nets = get_splitmnist_models(num_tasks, True, True, weights_dir, net_type, layer_type, activation_type)
+
+    for i in range(num_tasks):
+        loader = loaders[i][1]  # valid_loader
+        acc, model_selected, model_uncertainties = \
+            predict_using_uncertainty_separate_models(nets, loader, uncertainty_type=uncertainty_type, T=T)
+
+        print("All Models, Task-{}-Dataset=> Accuracy: {:.3}".format(i + 1, acc))
+        for j in range(num_tasks):
+            print("Model-{}-Preferred: {:.3}\tModel-{}-Uncertainty: {:.3}".format(
+                j + 1, model_selected[j], j + 1, model_uncertainties[j]))
+        print("\n", end="")
 
 
 @initiate_experiment
-def experiment_simultaneous_without_mixture_model_with_confidence(weights_dir=None):
-    num_tasks = 2
-    weights_dir = "checkpoints/MNIST/frequentist/splitted/2-tasks/" if weights_dir is None else weights_dir
+def experiment_multi_model_with_confidence(num_tasks, net_type='lenet', comment=None):
+    weights_dir = "checkpoints/MNIST/frequentist/splitted/{}-tasks/".format(num_tasks)
 
-    loaders1, loaders2 = get_splitmnist_dataloaders(num_tasks)
-    net1, net2 = get_splitmnist_models(num_tasks, False, True, weights_dir)
-    net1.cuda()
-    net2.cuda()
+    loaders = get_splitmnist_dataloaders(num_tasks)
+    nets = get_splitmnist_models(num_tasks, False, True, weights_dir, net_type)
 
-    print("Both Models, Task-1-Dataset=> Accuracy: {:.3}\tModel-1-Preferred: {:.3}\tModel-2-Preferred: {:.3}".format(
-        *predict_using_confidence_separate_models(net1, net2, loaders1[1])))
-    print("Both Models, Task-2-Dataset=> Accuracy: {:.3}\tModel-1-Preferred: {:.3}\tModel-2-Preferred: {:.3}".format(
-        *predict_using_confidence_separate_models(net1, net2, loaders2[1])))
+    for i in range(num_tasks):
+        loader = loaders[i][1]  # valid_loader
+        acc, model_selected = predict_using_confidence_separate_models(nets, loader)
+
+        print("All Models, Task-{}-Dataset=> Accuracy: {:.3}".format(i + 1, acc))
+        for j in range(num_tasks):
+            print("Model-{}-selected: {:.3}".format(j + 1, model_selected[j]))
+        print("\n", end="")
 
 
 @initiate_experiment
@@ -169,4 +173,4 @@ def wip_experiment_simultaneous_average_weights_mixture_model_with_uncertainty()
 
 
 if __name__ == '__main__':
-    experiment_simultaneous_without_mixture_model_with_confidence()
+    experiment_simultaneous_without_mixture_model_with_uncertainty(5)

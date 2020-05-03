@@ -126,75 +126,85 @@ def predict_regular(net, validloader, bayesian=True, num_ens=10):
     return np.mean(accs)
 
 
-def predict_using_uncertainty_separate_models(net1, net2, valid_loader, uncertainty_type='epistemic_softmax', T=25):
+def predict_using_uncertainty_multi_model(nets, valid_loader, uncertainty_type='epistemic_softmax', T=25):
     """
     For Bayesian models
     """
     accs = []
-    total_u1 = 0.0
-    total_u2 = 0.0
-    set1_selected = 0
-    set2_selected = 0
+    num_tasks = len(nets)
+    model_selected = [0.0] * num_tasks
+    total_uncertainty = [0.0] * num_tasks
 
     epi_or_ale, soft_or_norm = uncertainty_type.split('_')
     soft_or_norm = True if soft_or_norm=='normalized' else False
 
     for i, (inputs, labels) in enumerate(valid_loader):
         inputs, labels = inputs.to(device), labels.to(device)
-        pred1, epi1, ale1 = ue.get_uncertainty_per_batch(net1, inputs, T=T, normalized=soft_or_norm)
-        pred2, epi2, ale2 = ue.get_uncertainty_per_batch(net2, inputs, T=T, normalized=soft_or_norm)
 
-        if epi_or_ale=='epistemic':
-            u1 = np.sum(epi1, axis=1)
-            u2 = np.sum(epi2, axis=1)
-        elif epi_or_ale=='aleatoric':
-            u1 = np.sum(ale1, axis=1)
-            u2 = np.sum(ale2, axis=1)
-        elif epi_or_ale=='both':
-            u1 = np.sum(epi1, axis=1) + np.sum(ale1, axis=1)
-            u2 = np.sum(epi2, axis=1) + np.sum(ale2, axis=1)
-        else:
-            raise ValueError("Not correct uncertainty type")
+        preds = []
+        uncerts = []
 
-        total_u1 += np.sum(u1).item()
-        total_u2 += np.sum(u2).item()
+        for t in range(num_tasks):
+            net = nets[t]
+            net.cuda()
+            # (batch, categories); (batch, categories); (batch, categories)
+            pred, epi, ale = ue.get_uncertainty_per_batch(net, inputs, T=T, normalized=soft_or_norm)
+            preds.append(pred)
+            if epi_or_ale=='epistemic':
+                uncerts.append(epi)
+            elif epi_or_ale=='aleatoric':
+                uncerts.append(ale)
+            elif epi_or_ale=='both':
+                uncerts.append(epi + ale)
+            else:
+                raise ValueError("Not correct uncertainty type")
 
-        set1_preferred = u2 > u1  # idx where set1 has less uncertainty
-        set1_preferred = np.expand_dims(set1_preferred, 1)
-        preds = np.where(set1_preferred, pred1, pred2)
+        preds = np.stack(preds)  # (nets, batch, categories)
+        uncerts = np.stack(uncerts)  # (nets, batch, categories)
+        uncerts = np.sum(uncerts, axis=2) # (nets, batch)
 
-        set1_selected += np.sum(set1_preferred)
-        set2_selected += np.sum(~set1_preferred)
+        model_preferred = np.argmin(uncerts, axis=0)  # model which has the least uncertainty (model_idx)
+
+        for t in range(num_tasks):
+            total_uncertainty[t] += np.sum(uncerts[t]).item()
+            model_selected[t] += np.sum(model_preferred == t)
+
+        preds = preds[model_preferred, range(inputs.shape[0]), :]
 
         accs.append(metrics.acc(torch.tensor(preds), labels))
 
-    return np.mean(accs), set1_selected/(set1_selected + set2_selected), \
-        set2_selected/(set1_selected + set2_selected), total_u1, total_u2
+    return np.mean(accs), [m/np.sum(model_selected) for m in model_selected], total_uncertainty
 
 
-def predict_using_confidence_separate_models(net1, net2, valid_loader):
+def predict_using_confidence_multi_model(nets, valid_loader):
     """
     For Frequentist models
     """
     accs = []
-    set1_selected = 0
-    set2_selected = 0
+    num_tasks = len(nets)
+    model_selected = [0.0] * num_tasks
 
     for i, (inputs, labels) in enumerate(valid_loader):
         inputs, labels = inputs.to(device), labels.to(device)
-        pred1 = F.softmax(net1(inputs), dim=1)
-        pred2 = F.softmax(net2(inputs), dim=1)
 
-        set1_preferred = pred1.max(dim=1)[0] > pred2.max(dim=1)[0]  # idx where set1 has more confidence
-        preds = torch.where(set1_preferred.unsqueeze(1), pred1, pred2)
+        preds = []
+        for t in range(num_tasks):
+            net = nets[t]
+            net.cuda()
+            conf = F.softmax(net(inputs), dim=1)
+            preds.append(conf)
 
-        set1_selected += torch.sum(set1_preferred).float().item()
-        set2_selected += torch.sum(~set1_preferred).float().item()
+        preds = torch.cat([p.unsqueeze(0) for p in preds], dim=0)  # (nets, batch, categories)
+
+        model_preferred = torch.max(preds, dim=2)[0].argmax(dim=0).cpu().detach().numpy()  # model which has the most confidence (model_idx)
+        for t in range(num_tasks):
+            model_selected[t] += np.sum(model_preferred == t)
+
+        preds = preds[model_preferred, range(inputs.shape[0]), :]
 
         accs.append(metrics.acc(preds.detach(), labels))
 
-    return np.mean(accs), set1_selected/(set1_selected + set2_selected), \
-        set2_selected/(set1_selected + set2_selected)
+    return np.mean(accs), [m/np.sum(model_selected) for m in model_selected]
 
 
 def wip_predict_using_epistemic_uncertainty_with_mixture_model(model, fc3_1, fc3_2, valid_loader, T=10):
