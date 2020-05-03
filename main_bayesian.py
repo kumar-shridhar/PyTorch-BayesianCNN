@@ -114,7 +114,7 @@ def run(dataset, net_type):
     net = getModel(net_type, inputs, outputs, layer_type, activation_type).to(device)
 
     ckpt_dir = f'checkpoints/{dataset}/bayesian'
-    ckpt_name = f'checkpoints/{dataset}/bayesian/model_{net_type}_{layer_type}.pt'
+    ckpt_name = f'checkpoints/{dataset}/bayesian/model_{net_type}_{layer_type}_{activation_type}.pt'
 
     if not os.path.exists(ckpt_dir):
         os.makedirs(ckpt_dir, exist_ok=True)
