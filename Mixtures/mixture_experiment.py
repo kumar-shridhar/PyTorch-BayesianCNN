@@ -95,11 +95,11 @@ def experiment_multi_model_with_uncertainty(num_tasks, net_type='lenet', layer_t
     for i in range(num_tasks):
         loader = loaders[i][1]  # valid_loader
         acc, model_selected, model_uncertainties = \
-            predict_using_uncertainty_multi_model(nets, loader, uncertainty_type=uncertainty_type, T=T)
+            predict_using_uncertainty_multi_model(nets, loader, i,uncertainty_type=uncertainty_type, T=T)
 
         print("All Models, Task-{}-Dataset=> Accuracy: {:.3}".format(i + 1, acc))
         for j in range(num_tasks):
-            print("Model-{}-Preferred: {:.3}\tModel-{}-Uncertainty: {:.3}".format(
+            print("Model-{}-Preferred: {:.3}\tModel-{}-Uncertainty: {:.6}".format(
                 j + 1, model_selected[j], j + 1, model_uncertainties[j]))
         print("\n", end="")
 
@@ -113,7 +113,7 @@ def experiment_multi_model_with_confidence(num_tasks, net_type='lenet', comment=
 
     for i in range(num_tasks):
         loader = loaders[i][1]  # valid_loader
-        acc, model_selected = predict_using_confidence_multi_model(nets, loader)
+        acc, model_selected = predict_using_confidence_multi_model(nets, loader, i)
 
         print("All Models, Task-{}-Dataset=> Accuracy: {:.3}".format(i + 1, acc))
         for j in range(num_tasks):
@@ -173,4 +173,4 @@ def wip_experiment_simultaneous_average_weights_mixture_model_with_uncertainty()
 
 
 if __name__ == '__main__':
-    experiment_multi_model_with_uncertainty(2)
+    experiment_multi_model_with_uncertainty(5)

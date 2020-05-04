@@ -19,6 +19,10 @@ import uncertainty_estimation as ue
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
+def get_task_accuracy(outputs, targets, task_out, task_target):
+    return np.mean((outputs.argmax(axis=1) == targets) & (task_out == task_target))
+
+
 class Pass(nn.Module):
     def __init__(self):
         super(Pass, self).__init__()
@@ -126,7 +130,7 @@ def predict_regular(net, validloader, bayesian=True, num_ens=10):
     return np.mean(accs)
 
 
-def predict_using_uncertainty_multi_model(nets, valid_loader, uncertainty_type='epistemic_softmax', T=25):
+def predict_using_uncertainty_multi_model(nets, valid_loader, task_id, uncertainty_type='epistemic_softmax', T=25):
     """
     For Bayesian models
     """
@@ -171,12 +175,14 @@ def predict_using_uncertainty_multi_model(nets, valid_loader, uncertainty_type='
 
         preds = preds[model_preferred, range(inputs.shape[0]), :]
 
-        accs.append(metrics.acc(preds, labels))
+        task_target = np.ndarray((inputs.shape[0],), dtype=np.int32)
+        task_target.fill(task_id)
+        accs.append(get_task_accuracy(preds.cpu().numpy(), labels.cpu().numpy(), model_preferred, task_target))
 
     return np.mean(accs), [m/np.sum(model_selected) for m in model_selected], total_uncertainty
 
 
-def predict_using_confidence_multi_model(nets, valid_loader):
+def predict_using_confidence_multi_model(nets, valid_loader, task_id):
     """
     For Frequentist models
     """
@@ -202,7 +208,9 @@ def predict_using_confidence_multi_model(nets, valid_loader):
 
         preds = preds[model_preferred, range(inputs.shape[0]), :]
 
-        accs.append(metrics.acc(preds.detach(), labels))
+        task_target = np.ndarray((inputs.shape[0],), dtype=np.int32)
+        task_target.fill(task_id)
+        accs.append(get_task_accuracy(preds.detach().cpu().numpy(), labels.cpu().numpy(), model_preferred, task_target))
 
     return np.mean(accs), [m/np.sum(model_selected) for m in model_selected]
 
