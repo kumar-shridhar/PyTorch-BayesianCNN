@@ -149,29 +149,29 @@ def predict_using_uncertainty_multi_model(nets, valid_loader, uncertainty_type='
             net.cuda()
             # (batch, categories); (batch, categories); (batch, categories)
             pred, epi, ale = ue.get_uncertainty_per_batch(net, inputs, T=T, normalized=soft_or_norm)
-            preds.append(pred)
+            preds.append(torch.tensor(pred))
             if epi_or_ale=='epistemic':
-                uncerts.append(epi)
+                uncerts.append(torch.tensor(epi))
             elif epi_or_ale=='aleatoric':
-                uncerts.append(ale)
+                uncerts.append(torch.tensor(ale))
             elif epi_or_ale=='both':
-                uncerts.append(epi + ale)
+                uncerts.append(torch.tensor(epi + ale))
             else:
                 raise ValueError("Not correct uncertainty type")
 
-        preds = np.stack(preds)  # (nets, batch, categories)
-        uncerts = np.stack(uncerts)  # (nets, batch, categories)
-        uncerts = np.sum(uncerts, axis=2) # (nets, batch)
+        preds = torch.stack(preds)  # (nets, batch, categories)
+        uncerts = torch.stack(uncerts)  # (nets, batch, categories)
+        uncerts = torch.sum(uncerts, dim=2) # (nets, batch)
 
-        model_preferred = np.argmin(uncerts, axis=0)  # model which has the least uncertainty (model_idx)
+        model_preferred = torch.argmin(uncerts, dim=0).numpy()  # model which has the least uncertainty (model_idx)
 
         for t in range(num_tasks):
-            total_uncertainty[t] += np.sum(uncerts[t]).item()
+            total_uncertainty[t] += torch.sum(uncerts[t]).item()
             model_selected[t] += np.sum(model_preferred == t)
 
         preds = preds[model_preferred, range(inputs.shape[0]), :]
 
-        accs.append(metrics.acc(torch.tensor(preds), labels))
+        accs.append(metrics.acc(preds, labels))
 
     return np.mean(accs), [m/np.sum(model_selected) for m in model_selected], total_uncertainty
 
