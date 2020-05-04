@@ -5,7 +5,7 @@ import argparse
 
 import torch
 import numpy as np
-from torch.optim import Adam
+from torch.optim import Adam, lr_scheduler
 from torch.nn import functional as F
 
 import data
@@ -19,19 +19,18 @@ from models.BayesianModels.BayesianLeNet import BBBLeNet
 # CUDA settings
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-
-def getModel(net_type, inputs, outputs):
+def getModel(net_type, inputs, outputs, layer_type, activation_type):
     if (net_type == 'lenet'):
-        return BBBLeNet(outputs,inputs)
+        return BBBLeNet(outputs, inputs, layer_type, activation_type)
     elif (net_type == 'alexnet'):
-        return BBBAlexNet(outputs, inputs)
+        return BBBAlexNet(outputs, inputs, layer_type, activation_type)
     elif (net_type == '3conv3fc'):
-        return BBB3Conv3FC(outputs,inputs)
+        return BBB3Conv3FC(outputs, inputs, layer_type, activation_type)
     else:
         raise ValueError('Network should be either [LeNet / AlexNet / 3Conv3FC')
 
 
-def train_model(net, optimizer, criterion, trainloader, num_ens=1):
+def train_model(net, optimizer, criterion, trainloader, num_ens=1, beta_type=0.1):
     net.train()
     training_loss = 0.0
     accs = []
@@ -60,7 +59,8 @@ def train_model(net, optimizer, criterion, trainloader, num_ens=1):
         kl_list.append(kl.item())
         log_outputs = utils.logmeanexp(outputs, dim=2)
 
-        loss = criterion(log_outputs, labels, kl)
+        beta = metrics.get_beta(i-1, len(trainloader), beta_type)
+        loss = criterion(log_outputs, labels, kl, beta)
         loss.backward()
         optimizer.step()
 
@@ -71,7 +71,7 @@ def train_model(net, optimizer, criterion, trainloader, num_ens=1):
 
 def validate_model(net, criterion, validloader, num_ens=1):
     """Calculate ensemble accuracy and NLL Loss"""
-    net.eval()
+    net.train()
     valid_loss = 0.0
     accs = []
 
@@ -85,7 +85,9 @@ def validate_model(net, criterion, validloader, num_ens=1):
             outputs[:, :, j] = F.log_softmax(net_out, dim=1).data
 
         log_outputs = utils.logmeanexp(outputs, dim=2)
-        valid_loss += criterion(log_outputs, labels, kl).item()
+
+        beta = metrics.get_beta(i-1, len(validloader), 0.1)
+        valid_loss += criterion(log_outputs, labels, kl, beta).item()
         accs.append(metrics.acc(log_outputs, labels))
 
     return valid_loss/len(validloader), np.mean(accs)
@@ -94,6 +96,9 @@ def validate_model(net, criterion, validloader, num_ens=1):
 def run(dataset, net_type):
 
     # Hyper Parameter settings
+    layer_type = cfg.layer_type
+    activation_type = cfg.activation_type
+
     train_ens = cfg.train_ens
     valid_ens = cfg.valid_ens
     n_epochs = cfg.n_epochs
@@ -101,27 +106,29 @@ def run(dataset, net_type):
     num_workers = cfg.num_workers
     valid_size = cfg.valid_size
     batch_size = cfg.batch_size
+    beta_type = cfg.beta_type
 
     trainset, testset, inputs, outputs = data.getDataset(dataset)
     train_loader, valid_loader, test_loader = data.getDataloader(
         trainset, testset, valid_size, batch_size, num_workers)
-    net = getModel(net_type, inputs, outputs).to(device)
+    net = getModel(net_type, inputs, outputs, layer_type, activation_type).to(device)
 
     ckpt_dir = f'checkpoints/{dataset}/bayesian'
-    ckpt_name = f'checkpoints/{dataset}/bayesian/model_{net_type}.pt'
+    ckpt_name = f'checkpoints/{dataset}/bayesian/model_{net_type}_{layer_type}.pt'
 
     if not os.path.exists(ckpt_dir):
         os.makedirs(ckpt_dir, exist_ok=True)
 
     criterion = metrics.ELBO(len(trainset)).to(device)
     optimizer = Adam(net.parameters(), lr=lr_start)
+    lr_sched = lr_scheduler.ReduceLROnPlateau(optimizer, patience=6, verbose=True)
     valid_loss_max = np.Inf
     for epoch in range(n_epochs):  # loop over the dataset multiple times
         cfg.curr_epoch_no = epoch
-        utils.adjust_learning_rate(optimizer, metrics.lr_linear(epoch, 0, n_epochs, lr_start))
 
-        train_loss, train_acc, train_kl = train_model(net, optimizer, criterion, train_loader, num_ens=train_ens)
+        train_loss, train_acc, train_kl = train_model(net, optimizer, criterion, train_loader, num_ens=train_ens, beta_type=beta_type)
         valid_loss, valid_acc = validate_model(net, criterion, valid_loader, num_ens=valid_ens)
+        lr_sched.step(valid_loss)
 
         print('Epoch: {} \tTraining Loss: {:.4f} \tTraining Accuracy: {:.4f} \tValidation Loss: {:.4f} \tValidation Accuracy: {:.4f} \ttrain_kl_div: {:.4f}'.format(
             epoch, train_loss, train_acc, valid_loss, valid_acc, train_kl))
@@ -145,6 +152,9 @@ if __name__ == '__main__':
         if not os.path.exists(mean_var_dir):
             os.makedirs(mean_var_dir, exist_ok=True)
         for file in os.listdir(mean_var_dir):
-            os.remove(mean_var_dir + file)
+            try:
+                os.remove(mean_var_dir + file)
+            except IsADirectoryError:
+                pass
 
     run(args.dataset, args.net_type)

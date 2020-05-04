@@ -9,21 +9,36 @@ class ELBO(nn.Module):
         super(ELBO, self).__init__()
         self.train_size = train_size
 
-    def forward(self, input, target, kl, kl_weight=1.0):
+    def forward(self, input, target, kl, beta):
         assert not target.requires_grad
-        return F.nll_loss(input, target, size_average=True) * self.train_size + kl_weight * kl
+        return F.nll_loss(input, target, reduction='mean') * self.train_size + beta * kl
 
 
-def lr_linear(epoch_num, decay_start, total_epochs, start_value):
-    if epoch_num < decay_start:
-        return start_value
-    return start_value*float(total_epochs-epoch_num)/float(total_epochs-decay_start)
+# def lr_linear(epoch_num, decay_start, total_epochs, start_value):
+#     if epoch_num < decay_start:
+#         return start_value
+#     return start_value*float(total_epochs-epoch_num)/float(total_epochs-decay_start)
 
 
 def acc(outputs, targets):
     return np.mean(outputs.cpu().numpy().argmax(axis=1) == targets.data.cpu().numpy())
 
 
-def calculate_kl(log_alpha):
-    return 0.5 * torch.sum(torch.log1p(torch.exp(-log_alpha)))
+def calculate_kl(mu_p, sig_p, mu_q, sig_q):
+    kl = 0.5 * (2 * torch.log(sig_p / sig_q) - 1 + (sig_q / sig_p).pow(2) + ((mu_p - mu_q) / sig_p).pow(2)).sum()
+    return kl
 
+
+def get_beta(batch_idx, m, beta_type):
+    if type(beta_type) is float:
+        return beta_type
+
+    if beta_type == "Blundell":
+        beta = 2 ** (m - (batch_idx + 1)) / (2 ** m - 1)
+    elif beta_type == "Soenderby":
+        beta = min(epoch / (num_epochs // 4), 1)
+    elif beta_type == "Standard":
+        beta = 1 / m
+    else:
+        beta = 0
+    return beta

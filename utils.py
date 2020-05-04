@@ -1,6 +1,7 @@
 import os
 import torch
 import numpy as np
+from torch.nn import functional as F
 
 import config_bayesian as cfg
 
