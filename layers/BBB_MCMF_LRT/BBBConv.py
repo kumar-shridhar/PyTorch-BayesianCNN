@@ -50,7 +50,7 @@ class BBBConv2d(ModuleWrapper):
             self.bias_mu.data.normal_(0, 0.1)
             self.bias_rho.data.normal_(-3, 0.1)
 
-    def forward(self, x):
+    def forward(self, x, sample=True):
 
         self.W_sigma = torch.log1p(torch.exp(self.W_rho))
         if self.use_bias:
