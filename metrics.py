@@ -29,7 +29,7 @@ def calculate_kl(mu_p, sig_p, mu_q, sig_q):
     return kl
 
 
-def get_beta(batch_idx, m, beta_type):
+def get_beta(batch_idx, m, beta_type, epoch, num_epochs):
     if type(beta_type) is float:
         return beta_type
 
