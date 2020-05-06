@@ -30,7 +30,7 @@ def getModel(net_type, inputs, outputs, layer_type, activation_type):
         raise ValueError('Network should be either [LeNet / AlexNet / 3Conv3FC')
 
 
-def train_model(net, optimizer, criterion, trainloader, num_ens=1, beta_type=0.1, epoch=1, num_epochs=1):
+def train_model(net, optimizer, criterion, trainloader, num_ens=1, beta_type=0.1, epoch=None, num_epochs=None):
     net.train()
     training_loss = 0.0
     accs = []
@@ -69,7 +69,7 @@ def train_model(net, optimizer, criterion, trainloader, num_ens=1, beta_type=0.1
     return training_loss/len(trainloader), np.mean(accs), np.mean(kl_list)
 
 
-def validate_model(net, criterion, validloader, num_ens=1, beta_type=0.1, epoch=1, num_epochs=1):
+def validate_model(net, criterion, validloader, num_ens=1, beta_type=0.1, epoch=None, num_epochs=None):
     """Calculate ensemble accuracy and NLL Loss"""
     net.train()
     valid_loss = 0.0
