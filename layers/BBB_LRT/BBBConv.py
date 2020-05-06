@@ -7,13 +7,16 @@ import torch.nn as nn
 import torch.nn.functional as F
 from torch.nn import Parameter
 
+import utils
 from metrics import calculate_kl as KL_DIV
+import config_bayesian as cfg
 from ..misc import ModuleWrapper
 
 
 class BBBConv2d(ModuleWrapper):
-    def __init__(self, in_channels, out_channels, kernel_size,
-                 stride=1, padding=0, dilation=1, bias=True):
+
+    def __init__(self, in_channels, out_channels, kernel_size, stride=1,
+                 padding=0, dilation=1, bias=True):
         super(BBBConv2d, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -28,12 +31,11 @@ class BBBConv2d(ModuleWrapper):
         self.prior_mu = 0
         self.prior_sigma = 0.1
 
-        self.W_mu = Parameter(torch.empty((out_channels, in_channels, *self.kernel_size), device=self.device))
-        self.W_rho = Parameter(torch.empty((out_channels, in_channels, *self.kernel_size), device=self.device))
-
+        self.W_mu = Parameter(torch.Tensor(out_channels, in_channels, *self.kernel_size))
+        self.W_rho = Parameter(torch.Tensor(out_channels, in_channels, *self.kernel_size))
         if self.use_bias:
-            self.bias_mu = Parameter(torch.empty((out_channels), device=self.device))
-            self.bias_rho = Parameter(torch.empty((out_channels), device=self.device))
+            self.bias_mu = Parameter(torch.Tensor(out_channels))
+            self.bias_rho = Parameter(torch.Tensor(out_channels))
         else:
             self.register_parameter('bias_mu', None)
             self.register_parameter('bias_rho', None)
@@ -48,23 +50,26 @@ class BBBConv2d(ModuleWrapper):
             self.bias_mu.data.normal_(0, 0.1)
             self.bias_rho.data.normal_(-3, 0.1)
 
-    def forward(self, input, sample=True):
-        if self.training or sample:
-            W_eps = torch.empty(self.W_mu.size()).normal_(0, 1).to(self.device)
-            self.W_sigma = torch.log1p(torch.exp(self.W_rho))
-            weight = self.W_mu + W_eps * self.W_sigma
+    def forward(self, x):
 
-            if self.use_bias:
-                bias_eps = torch.empty(self.bias_mu.size()).normal_(0, 1).to(self.device)
-                self.bias_sigma = torch.log1p(torch.exp(self.bias_rho))
-                bias = self.bias_mu + bias_eps * self.bias_sigma
-            else:
-                bias = None
+        self.W_sigma = torch.log1p(torch.exp(self.W_rho))
+        if self.use_bias:
+            self.bias_sigma = torch.log1p(torch.exp(self.bias_rho))
+            bias_var = self.bias_sigma ** 2
         else:
-            weight = self.W_mu
-            bias = self.bias_mu if self.use_bias else None
+            self.bias_sigma = bias_var = None
 
-        return F.conv2d(input, weight, bias, self.stride, self.padding, self.dilation, self.groups)
+        act_mu = F.conv2d(
+            x, self.W_mu, self.bias_mu, self.stride, self.padding, self.dilation, self.groups)
+        act_var = 1e-16 + F.conv2d(
+            x ** 2, self.W_sigma ** 2, bias_var, self.stride, self.padding, self.dilation, self.groups)
+        act_std = torch.sqrt(act_var)
+
+        if self.training or sample:
+            eps = torch.empty(act_mu.size()).normal_(0, 1).to(self.device)
+            return act_mu + act_std * eps
+        else:
+            return act_mu
 
     def kl_loss(self):
         kl = KL_DIV(self.prior_mu, self.prior_sigma, self.W_mu, self.W_sigma)

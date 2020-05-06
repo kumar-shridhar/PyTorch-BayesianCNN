@@ -1,7 +1,7 @@
 import math
 import torch.nn as nn
+from layers import BBB_Linear, BBB_Conv2d
 from layers import BBB_LRT_Linear, BBB_LRT_Conv2d
-from layers import BBB_MCMF_LRT_Linear, BBB_MCMF_LRT_Conv2d
 from layers import FlattenLayer, ModuleWrapper
 
 
@@ -14,12 +14,12 @@ class BBBLeNet(ModuleWrapper):
         self.num_classes = outputs
         self.layer_type = layer_type
 
-        if layer_type=='mcmf_lrt':
-            BBBLinear = BBB_MCMF_LRT_Linear
-            BBBConv2d = BBB_MCMF_LRT_Conv2d
-        elif layer_type=='lrt':
+        if layer_type=='lrt':
             BBBLinear = BBB_LRT_Linear
             BBBConv2d = BBB_LRT_Conv2d
+        elif layer_type=='bbb':
+            BBBLinear = BBB_Linear
+            BBBConv2d = BBB_Conv2d
         else:
             raise ValueError("Undefined layer_type")
         
