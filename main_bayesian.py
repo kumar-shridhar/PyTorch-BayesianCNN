@@ -35,14 +35,7 @@ def train_model(net, optimizer, criterion, trainloader, num_ens=1, beta_type=0.1
     training_loss = 0.0
     accs = []
     kl_list = []
-    freq = cfg.recording_freq_per_epoch
-    freq = len(trainloader)//freq
     for i, (inputs, labels) in enumerate(trainloader, 1):
-        cfg.curr_batch_no = i
-        if i%freq==0:
-            cfg.record_now = True
-        else:
-            cfg.record_now = False
 
         optimizer.zero_grad()
 
@@ -125,7 +118,6 @@ def run(dataset, net_type):
     lr_sched = lr_scheduler.ReduceLROnPlateau(optimizer, patience=6, verbose=True)
     valid_loss_max = np.Inf
     for epoch in range(n_epochs):  # loop over the dataset multiple times
-        cfg.curr_epoch_no = epoch
 
         train_loss, train_acc, train_kl = train_model(net, optimizer, criterion, train_loader, num_ens=train_ens, beta_type=beta_type)
         valid_loss, valid_acc = validate_model(net, criterion, valid_loader, num_ens=valid_ens)
@@ -146,16 +138,5 @@ if __name__ == '__main__':
     parser.add_argument('--net_type', default='lenet', type=str, help='model')
     parser.add_argument('--dataset', default='MNIST', type=str, help='dataset = [MNIST/CIFAR10/CIFAR100]')
     args = parser.parse_args()
-
-    if cfg.record_mean_var:
-        mean_var_dir = f"checkpoints/{args.dataset}/bayesian/{args.net_type}/"
-        cfg.mean_var_dir = mean_var_dir
-        if not os.path.exists(mean_var_dir):
-            os.makedirs(mean_var_dir, exist_ok=True)
-        for file in os.listdir(mean_var_dir):
-            try:
-                os.remove(mean_var_dir + file)
-            except IsADirectoryError:
-                pass
 
     run(args.dataset, args.net_type)
