@@ -8,7 +8,7 @@ from layers import FlattenLayer, ModuleWrapper
 class BBBAlexNet(ModuleWrapper):
     '''The architecture of AlexNet with Bayesian Layers'''
 
-    def __init__(self, outputs, inputs, priors, layer_type='mcmf_lrt', activation_type='softplus'):
+    def __init__(self, outputs, inputs, priors, layer_type='lrt', activation_type='softplus'):
         super(BBBAlexNet, self).__init__()
 
         self.num_classes = outputs

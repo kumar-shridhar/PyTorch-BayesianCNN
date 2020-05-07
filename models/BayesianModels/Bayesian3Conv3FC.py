@@ -10,7 +10,7 @@ class BBB3Conv3FC(ModuleWrapper):
     Simple Neural Network having 3 Convolution
     and 3 FC layers with Bayesian layers.
     """
-    def __init__(self, outputs, inputs, priors, layer_type='mcmf_lrt', activation_type='softplus'):
+    def __init__(self, outputs, inputs, priors, layer_type='lrt', activation_type='softplus'):
         super(BBB3Conv3FC, self).__init__()
 
         self.num_classes = outputs

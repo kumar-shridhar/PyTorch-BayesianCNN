@@ -13,13 +13,7 @@ from ..misc import ModuleWrapper
 
 class BBBConv2d(ModuleWrapper):
     def __init__(self, in_channels, out_channels, kernel_size,
-                 stride=1, padding=0, dilation=1, bias=True,
-                 priors={
-                     'prior_mu': 0,
-                     'prior_sigma': 0.1,
-                     'posterior_mu_initial': (0, 0.1),
-                     'posterior_rho_initial': (-3, 0.1),
-                 }):
+                 stride=1, padding=0, dilation=1, bias=True, priors=None):
 
         super(BBBConv2d, self).__init__()
         self.in_channels = in_channels
@@ -32,6 +26,13 @@ class BBBConv2d(ModuleWrapper):
         self.use_bias = bias
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+        if priors is None:
+            priors = {
+                'prior_mu': 0,
+                'prior_sigma': 0.1,
+                'posterior_mu_initial': (0, 0.1),
+                'posterior_rho_initial': (-3, 0.1),
+            }
         self.prior_mu = priors['prior_mu']
         self.prior_sigma = priors['prior_sigma']
         self.posterior_mu_initial = priors['posterior_mu_initial']

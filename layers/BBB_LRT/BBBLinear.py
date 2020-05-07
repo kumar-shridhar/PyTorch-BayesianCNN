@@ -15,19 +15,20 @@ from ..misc import ModuleWrapper
 
 class BBBLinear(ModuleWrapper):
 
-    def __init__(self, in_features, out_features, bias=True,
-                 priors={
-                     'prior_mu': 0,
-                     'prior_sigma': 0.1,
-                     'posterior_mu_initial': (0, 0.1),
-                     'posterior_rho_initial': (-3, 0.1),
-                 }):
+    def __init__(self, in_features, out_features, bias=True, priors=None):
         super(BBBLinear, self).__init__()
         self.in_features = in_features
         self.out_features = out_features
         self.use_bias = bias
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+        if priors is None:
+                priors = {
+                'prior_mu': 0,
+                'prior_sigma': 0.1,
+                'posterior_mu_initial': (0, 0.1),
+                'posterior_rho_initial': (-3, 0.1),
+            }
         self.prior_mu = priors['prior_mu']
         self.prior_sigma = priors['prior_sigma']
         self.posterior_mu_initial = priors['posterior_mu_initial']
