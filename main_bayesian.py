@@ -30,7 +30,7 @@ def getModel(net_type, inputs, outputs, priors, layer_type, activation_type):
         raise ValueError('Network should be either [LeNet / AlexNet / 3Conv3FC')
 
 
-def train_model(net, optimizer, criterion, trainloader, num_ens=1, beta_type=0.1):
+def train_model(net, optimizer, criterion, trainloader, num_ens=1, beta_type=0.1, epoch=None, num_epochs=None):
     net.train()
     training_loss = 0.0
     accs = []
@@ -52,7 +52,7 @@ def train_model(net, optimizer, criterion, trainloader, num_ens=1, beta_type=0.1
         kl_list.append(kl.item())
         log_outputs = utils.logmeanexp(outputs, dim=2)
 
-        beta = metrics.get_beta(i-1, len(trainloader), beta_type)
+        beta = metrics.get_beta(i-1, len(trainloader), beta_type, epoch, num_epochs)
         loss = criterion(log_outputs, labels, kl, beta)
         loss.backward()
         optimizer.step()
@@ -62,7 +62,7 @@ def train_model(net, optimizer, criterion, trainloader, num_ens=1, beta_type=0.1
     return training_loss/len(trainloader), np.mean(accs), np.mean(kl_list)
 
 
-def validate_model(net, criterion, validloader, num_ens=1):
+def validate_model(net, criterion, validloader, num_ens=1, beta_type=0.1, epoch=None, num_epochs=None):
     """Calculate ensemble accuracy and NLL Loss"""
     net.train()
     valid_loss = 0.0
@@ -79,7 +79,7 @@ def validate_model(net, criterion, validloader, num_ens=1):
 
         log_outputs = utils.logmeanexp(outputs, dim=2)
 
-        beta = metrics.get_beta(i-1, len(validloader), 0.1)
+        beta = metrics.get_beta(i-1, len(validloader), beta_type, epoch, num_epochs)
         valid_loss += criterion(log_outputs, labels, kl, beta).item()
         accs.append(metrics.acc(log_outputs, labels))
 
@@ -119,8 +119,8 @@ def run(dataset, net_type):
     valid_loss_max = np.Inf
     for epoch in range(n_epochs):  # loop over the dataset multiple times
 
-        train_loss, train_acc, train_kl = train_model(net, optimizer, criterion, train_loader, num_ens=train_ens, beta_type=beta_type)
-        valid_loss, valid_acc = validate_model(net, criterion, valid_loader, num_ens=valid_ens)
+        train_loss, train_acc, train_kl = train_model(net, optimizer, criterion, train_loader, num_ens=train_ens, beta_type=beta_type, epoch=epoch, num_epochs=n_epochs)
+        valid_loss, valid_acc = validate_model(net, criterion, valid_loader, num_ens=valid_ens, beta_type=beta_type, epoch=epoch, num_epochs=n_epochs)
         lr_sched.step(valid_loss)
 
         print('Epoch: {} \tTraining Loss: {:.4f} \tTraining Accuracy: {:.4f} \tValidation Loss: {:.4f} \tValidation Accuracy: {:.4f} \ttrain_kl_div: {:.4f}'.format(
