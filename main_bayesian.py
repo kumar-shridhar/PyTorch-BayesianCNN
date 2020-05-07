@@ -19,13 +19,13 @@ from models.BayesianModels.BayesianLeNet import BBBLeNet
 # CUDA settings
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-def getModel(net_type, inputs, outputs, layer_type, activation_type):
+def getModel(net_type, inputs, outputs, priors, layer_type, activation_type):
     if (net_type == 'lenet'):
-        return BBBLeNet(outputs, inputs, layer_type, activation_type)
+        return BBBLeNet(outputs, inputs, priors, layer_type, activation_type)
     elif (net_type == 'alexnet'):
-        return BBBAlexNet(outputs, inputs, layer_type, activation_type)
+        return BBBAlexNet(outputs, inputs, priors, layer_type, activation_type)
     elif (net_type == '3conv3fc'):
-        return BBB3Conv3FC(outputs, inputs, layer_type, activation_type)
+        return BBB3Conv3FC(outputs, inputs, priors, layer_type, activation_type)
     else:
         raise ValueError('Network should be either [LeNet / AlexNet / 3Conv3FC')
 
@@ -98,6 +98,7 @@ def run(dataset, net_type):
     # Hyper Parameter settings
     layer_type = cfg.layer_type
     activation_type = cfg.activation_type
+    priors = cfg.priors
 
     train_ens = cfg.train_ens
     valid_ens = cfg.valid_ens
@@ -111,7 +112,7 @@ def run(dataset, net_type):
     trainset, testset, inputs, outputs = data.getDataset(dataset)
     train_loader, valid_loader, test_loader = data.getDataloader(
         trainset, testset, valid_size, batch_size, num_workers)
-    net = getModel(net_type, inputs, outputs, layer_type, activation_type).to(device)
+    net = getModel(net_type, inputs, outputs, priors, layer_type, activation_type).to(device)
 
     ckpt_dir = f'checkpoints/{dataset}/bayesian'
     ckpt_name = f'checkpoints/{dataset}/bayesian/model_{net_type}_{layer_type}_{activation_type}.pt'

@@ -12,15 +12,23 @@ from ..misc import ModuleWrapper
 
 
 class BBBLinear(ModuleWrapper):
-    def __init__(self, in_features, out_features, bias=True):
+    def __init__(self, in_features, out_features, bias=True,
+                 priors={
+                     'prior_mu': 0,
+                     'prior_sigma': 0.1,
+                     'posterior_mu_initial': (0, 0.1),
+                     'posterior_rho_initial': (-3, 0.1),
+                 }):
         super(BBBLinear, self).__init__()
         self.in_features = in_features
         self.out_features = out_features
         self.use_bias = bias
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-        self.prior_mu = 0
-        self.prior_sigma = 0.1
+        self.prior_mu = priors['prior_mu']
+        self.prior_sigma = priors['prior_sigma']
+        self.posterior_mu_initial = priors['posterior_mu_initial']
+        self.posterior_rho_initial = priors['posterior_rho_initial']
 
         self.W_mu = Parameter(torch.empty((out_features, in_features), device=self.device))
         self.W_rho = Parameter(torch.empty((out_features, in_features), device=self.device))
@@ -35,12 +43,12 @@ class BBBLinear(ModuleWrapper):
         self.reset_parameters()
 
     def reset_parameters(self):
-        self.W_mu.data.normal_(0, 0.1)
-        self.W_rho.data.normal_(-3, 0.1)
+        self.W_mu.data.normal_(*self.posterior_mu_initial)
+        self.W_rho.data.normal_(*self.posterior_rho_initial)
 
         if self.use_bias:
-            self.bias_mu.data.normal_(0, 0.1)
-            self.bias_rho.data.normal_(-3, 0.1)
+            self.bias_mu.data.normal_(*self.posterior_mu_initial)
+            self.bias_rho.data.normal_(*self.posterior_rho_initial)
 
     def forward(self, input, sample=True):
         if self.training or sample:
