@@ -19,13 +19,13 @@ from models.BayesianModels.BayesianLeNet import BBBLeNet
 # CUDA settings
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
-def getModel(net_type, inputs, outputs, layer_type, activation_type):
+def getModel(net_type, inputs, outputs, priors, layer_type, activation_type):
     if (net_type == 'lenet'):
-        return BBBLeNet(outputs, inputs, layer_type, activation_type)
+        return BBBLeNet(outputs, inputs, priors, layer_type, activation_type)
     elif (net_type == 'alexnet'):
-        return BBBAlexNet(outputs, inputs, layer_type, activation_type)
+        return BBBAlexNet(outputs, inputs, priors, layer_type, activation_type)
     elif (net_type == '3conv3fc'):
-        return BBB3Conv3FC(outputs, inputs, layer_type, activation_type)
+        return BBB3Conv3FC(outputs, inputs, priors, layer_type, activation_type)
     else:
         raise ValueError('Network should be either [LeNet / AlexNet / 3Conv3FC')
 
@@ -35,14 +35,7 @@ def train_model(net, optimizer, criterion, trainloader, num_ens=1, beta_type=0.1
     training_loss = 0.0
     accs = []
     kl_list = []
-    freq = cfg.recording_freq_per_epoch
-    freq = len(trainloader)//freq
     for i, (inputs, labels) in enumerate(trainloader, 1):
-        cfg.curr_batch_no = i
-        if i%freq==0:
-            cfg.record_now = True
-        else:
-            cfg.record_now = False
 
         optimizer.zero_grad()
 
@@ -98,6 +91,7 @@ def run(dataset, net_type):
     # Hyper Parameter settings
     layer_type = cfg.layer_type
     activation_type = cfg.activation_type
+    priors = cfg.priors
 
     train_ens = cfg.train_ens
     valid_ens = cfg.valid_ens
@@ -111,10 +105,10 @@ def run(dataset, net_type):
     trainset, testset, inputs, outputs = data.getDataset(dataset)
     train_loader, valid_loader, test_loader = data.getDataloader(
         trainset, testset, valid_size, batch_size, num_workers)
-    net = getModel(net_type, inputs, outputs, layer_type, activation_type).to(device)
+    net = getModel(net_type, inputs, outputs, priors, layer_type, activation_type).to(device)
 
     ckpt_dir = f'checkpoints/{dataset}/bayesian'
-    ckpt_name = f'checkpoints/{dataset}/bayesian/model_{net_type}_{layer_type}.pt'
+    ckpt_name = f'checkpoints/{dataset}/bayesian/model_{net_type}_{layer_type}_{activation_type}.pt'
 
     if not os.path.exists(ckpt_dir):
         os.makedirs(ckpt_dir, exist_ok=True)
@@ -124,7 +118,6 @@ def run(dataset, net_type):
     lr_sched = lr_scheduler.ReduceLROnPlateau(optimizer, patience=6, verbose=True)
     valid_loss_max = np.Inf
     for epoch in range(n_epochs):  # loop over the dataset multiple times
-        cfg.curr_epoch_no = epoch
 
         train_loss, train_acc, train_kl = train_model(net, optimizer, criterion, train_loader, num_ens=train_ens, beta_type=beta_type, epoch=epoch, num_epochs=n_epochs)
         valid_loss, valid_acc = validate_model(net, criterion, valid_loader, num_ens=valid_ens, beta_type=beta_type, epoch=epoch, num_epochs=n_epochs)
@@ -145,16 +138,5 @@ if __name__ == '__main__':
     parser.add_argument('--net_type', default='lenet', type=str, help='model')
     parser.add_argument('--dataset', default='MNIST', type=str, help='dataset = [MNIST/CIFAR10/CIFAR100]')
     args = parser.parse_args()
-
-    if cfg.record_mean_var:
-        mean_var_dir = f"checkpoints/{args.dataset}/bayesian/{args.net_type}/"
-        cfg.mean_var_dir = mean_var_dir
-        if not os.path.exists(mean_var_dir):
-            os.makedirs(mean_var_dir, exist_ok=True)
-        for file in os.listdir(mean_var_dir):
-            try:
-                os.remove(mean_var_dir + file)
-            except IsADirectoryError:
-                pass
 
     run(args.dataset, args.net_type)
