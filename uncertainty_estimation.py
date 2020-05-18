@@ -11,7 +11,11 @@ import matplotlib.pyplot as plt
 
 import data
 from main_bayesian import getModel
+import config_bayesian as cfg
 
+
+# CUDA settings
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 mnist_set = None
 notmnist_set = None
@@ -109,15 +113,19 @@ def get_sample(dataset, sample_type='mnist'):
 
     sample = sample.unsqueeze(0)
     sample = transform(sample)
-    return sample, truth
+    return sample.to(device), truth
 
 
 def run(net_type, weight_path, notmnist_dir):
     init_dataset(notmnist_dir)
 
-    net = getModel(net_type, 1, 10)
+    layer_type = cfg.layer_type
+    activation_type = cfg.activation_type
+
+    net = getModel(net_type, 1, 10, priors=None, layer_type=layer_type, activation_type=activation_type)
     net.load_state_dict(torch.load(weight_path))
     net.train()
+    net.to(device)
 
     fig = plt.figure()
     fig.suptitle('Uncertainty Estimation', fontsize='x-large')
@@ -131,14 +139,14 @@ def run(net_type, weight_path, notmnist_dir):
     sample_mnist, truth_mnist = get_sample(mnist_set)
     pred_mnist, epi_mnist_norm, ale_mnist_norm = get_uncertainty_per_image(net, sample_mnist, T=25, normalized=True)
     pred_mnist, epi_mnist_soft, ale_mnist_soft = get_uncertainty_per_image(net, sample_mnist, T=25, normalized=False)
-    mnist_img.imshow(sample_mnist.squeeze(), cmap='gray')
+    mnist_img.imshow(sample_mnist.squeeze().cpu(), cmap='gray')
     mnist_img.axis('off')
     mnist_img.set_title('MNIST Truth: {} Prediction: {}'.format(int(truth_mnist), int(np.argmax(pred_mnist))))
 
     sample_notmnist, truth_notmnist = get_sample(notmnist_set, sample_type='notmnist')
     pred_notmnist, epi_notmnist_norm, ale_notmnist_norm = get_uncertainty_per_image(net, sample_notmnist, T=25, normalized=True)
     pred_notmnist, epi_notmnist_soft, ale_notmnist_soft = get_uncertainty_per_image(net, sample_notmnist, T=25, normalized=False)
-    notmnist_img.imshow(sample_notmnist.squeeze(), cmap='gray')
+    notmnist_img.imshow(sample_notmnist.squeeze().cpu(), cmap='gray')
     notmnist_img.axis('off')
     notmnist_img.set_title('notMNIST Truth: {}({}) Prediction: {}({})'.format(
         int(truth_notmnist), chr(65 + truth_notmnist), int(np.argmax(pred_notmnist)), chr(65 + np.argmax(pred_notmnist))))
