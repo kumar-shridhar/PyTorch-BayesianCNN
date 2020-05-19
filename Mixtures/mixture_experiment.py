@@ -53,6 +53,26 @@ def initiate_experiment(experiment):
     return decorator
 
 
+class multi_head_wrapper:
+    def __init__(self, net_mix, last_layer, num_classes):
+        self.net = net_mix
+        self.clf = last_layer
+        self.num_classes = num_classes
+
+    def __call__(self, inputs):
+        net_out, _ = self.net(inputs)
+        out = self.clf(net_out)
+        return out, None  # None for kl_div compatibility
+
+    def train(self):
+        self.net.train()
+        self.clf.train()
+
+    def eval(self):
+        self.net.eval()
+        self.clf.eval()
+
+
 @initiate_experiment
 def experiment_regular_prediction_bayesian(num_tasks, net_type='lenet', layer_type='lrt', activation_type='softplus', num_ens=25, comment=None):
 
@@ -122,12 +142,32 @@ def experiment_multi_model_with_confidence(num_tasks, net_type='lenet', comment=
 
 @initiate_experiment
 def experiment_multi_head_average(num_tasks, net_type='lenet', layer_type='lrt', activation_type='softplus', num_ens=25, comment=None):
-    pass
+    weights_dir = "checkpoints/MNIST/bayesian/splitted/{}-tasks/".format(num_tasks)
+
+    loaders = get_splitmnist_dataloaders(num_tasks)
+    net_mix, heads = get_mixture_model(num_tasks, weights_dir, average=True, net_type=net_type, layer_type=layer_type, activation_type=activation_type)
+
+    for i in range(num_tasks):
+        net = multi_head_wrapper(net_mix.cuda(), heads[i].cuda(), 10 // num_tasks)
+        print("Head-{}-Performance:".format(i + 1))
+        for j in range(num_tasks):
+            loader = loaders[j][1]  # valid_loader
+            print("Task-{}-Dataset=> Accuracy: {:.3}".format(j + 1, predict_regular(net, loader, True, num_ens)))
 
 
 @initiate_experiment
 def experiment_multi_head_wasserstein(num_tasks, net_type='lenet', layer_type='lrt', activation_type='softplus', num_ens=25, comment=None):
-    pass
+    weights_dir = "checkpoints/MNIST/bayesian/splitted/{}-tasks/".format(num_tasks)
+
+    loaders = get_splitmnist_dataloaders(num_tasks)
+    net_mix, heads = get_mixture_model(num_tasks, weights_dir, average=False, net_type=net_type, layer_type=layer_type, activation_type=activation_type)
+
+    for i in range(num_tasks):
+        net = multi_head_wrapper(net_mix.cuda(), heads[i].cuda(), 10 // num_tasks)
+        print("Head-{}-Performance:".format(i + 1))
+        for j in range(num_tasks):
+            loader = loaders[j][1]  # valid_loader
+            print("Task-{}-Dataset=> Accuracy: {:.3}".format(j + 1, predict_regular(net, loader, True, num_ens)))
 
 
 @initiate_experiment
@@ -194,4 +234,4 @@ def wip_experiment_simultaneous_average_weights_mixture_model_with_uncertainty()
 
 
 if __name__ == '__main__':
-    experiment_multi_model_with_uncertainty(5)
+    experiment_multi_head_wasserstein(2, comment='1st_try')
