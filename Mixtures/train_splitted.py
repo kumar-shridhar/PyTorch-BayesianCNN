@@ -29,6 +29,7 @@ def train_splitted(num_tasks, bayesian=True, net_type='lenet'):
     valid_ens = cfg.valid_ens
     n_epochs = cfg.n_epochs
     lr_start = cfg.lr_start
+    priors = cfg.priors
 
     if bayesian:
         ckpt_dir = f"checkpoints/MNIST/bayesian/splitted/{num_tasks}-tasks/"
@@ -38,8 +39,9 @@ def train_splitted(num_tasks, bayesian=True, net_type='lenet'):
         os.makedirs(ckpt_dir, exist_ok=True)
 
     loaders, datasets = mix_utils.get_splitmnist_dataloaders(num_tasks, return_datasets=True)
-    models = mix_utils.get_splitmnist_models(num_tasks, bayesian=bayesian, pretrained=False, net_type=net_type,
-                                             layer_type=layer_type, activation_type=activation_type)
+    models = mix_utils.get_splitmnist_models(
+        num_tasks, bayesian=bayesian, pretrained=False, priors=priors,
+        net_type=net_type, layer_type=layer_type, activation_type=activation_type)
 
     for task in range(1, num_tasks + 1):
         print(f"Training task-{task}..")

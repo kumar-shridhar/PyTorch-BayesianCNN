@@ -54,7 +54,7 @@ def get_splitmnist_dataloaders(num_tasks, return_datasets=False):
     return loaders
 
 
-def get_splitmnist_models(num_tasks, bayesian=True, pretrained=False, weights_dir=None,
+def get_splitmnist_models(num_tasks, bayesian=True, pretrained=False, weights_dir=None, priors=None,
                           net_type='lenet', layer_type='lrt', activation_type='softplus'):
     inputs = 1
     outputs = 10 // num_tasks
@@ -66,7 +66,7 @@ def get_splitmnist_models(num_tasks, bayesian=True, pretrained=False, weights_di
         assert weights_dir
     for i in range(1, num_tasks + 1):
         if bayesian:
-            model = getBayesianModel(net_type, inputs, outputs, layer_type, activation_type)
+            model = getBayesianModel(net_type, inputs, outputs, priors, layer_type, activation_type)
         else:
             model = getFrequentistModel(net_type, inputs, outputs)
         models.append(model)
@@ -223,8 +223,8 @@ def _get_mixture_weights(mu_layers, rho_layers, average=False):
     init_weights_shape = mu_layers[0].shape
     sigma_layers = [torch.log1p(torch.exp(layer_rho)) for layer_rho in rho_layers]
 
-    mu_layers = [layer_mu.flatten().numpy() for layer_mu in layers_mu]
-    sigma_layers = [layer_sigma.flatten().numpy() for layer_sigma in layers_sigma]
+    mu_layers = [layer_mu.flatten().cpu().numpy() for layer_mu in mu_layers]
+    sigma_layers = [layer_sigma.flatten().cpu().numpy() for layer_sigma in sigma_layers]
 
     mu_mix = np.empty_like(mu_layers[0])
     sigma_mix = np.empty_like(sigma_layers[0])
@@ -245,7 +245,7 @@ def get_mixture_model(num_tasks, weights_dir, average=False, net_type='lenet', l
 
     inputs = 1  # MNIST
     outputs = 10 // num_tasks
-    net = getBayesianModel(net_type, inputs, outputs, layer_type, activation_type)
+    net = getBayesianModel(net_type, inputs, outputs, None, layer_type, activation_type)
 
     task_weights = []
     for i in range(1, num_tasks + 1):
