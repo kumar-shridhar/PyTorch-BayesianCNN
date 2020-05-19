@@ -7,7 +7,6 @@ import torch
 import contextlib
 
 from utils_mixture import *
-# from layers.BBBLinear import BBBLinear
 
 
 @contextlib.contextmanager
@@ -85,7 +84,7 @@ def experiment_regular_prediction_frequentist(num_tasks, net_type='lenet', comme
 
 @initiate_experiment
 def experiment_multi_model_with_uncertainty(num_tasks, net_type='lenet', layer_type='lrt', activation_type='softplus',
-                                                                   uncertainty_type="epistemic_softmax", T=25, weights_dir=None, comment=None):
+                                            uncertainty_type="epistemic_softmax", T=25, weights_dir=None, comment=None):
 
     weights_dir = "checkpoints/MNIST/bayesian/splitted/{}-tasks/".format(num_tasks)
 
@@ -119,6 +118,28 @@ def experiment_multi_model_with_confidence(num_tasks, net_type='lenet', comment=
         for j in range(num_tasks):
             print("Model-{}-selected: {:.3}".format(j + 1, model_selected[j]))
         print("\n", end="")
+
+
+@initiate_experiment
+def experiment_multi_head_average(num_tasks, net_type='lenet', layer_type='lrt', activation_type='softplus', num_ens=25, comment=None):
+    pass
+
+
+@initiate_experiment
+def experiment_multi_head_wasserstein(num_tasks, net_type='lenet', layer_type='lrt', activation_type='softplus', num_ens=25, comment=None):
+    pass
+
+
+@initiate_experiment
+def experiment_multi_head_average_with_uncertainty(num_tasks, net_type='lenet', layer_type='lrt', activation_type='softplus',
+                                                   uncertainty_type="epistemic_softmax", T=25, weights_dir=None, comment=None):
+    pass
+
+
+@initiate_experiment
+def experiment_multi_head_wasserstein_with_uncertainty(num_tasks, net_type='lenet', layer_type='lrt', activation_type='softplus',
+                                                       uncertainty_type="epistemic_softmax", T=25, weights_dir=None, comment=None):
+    pass
 
 
 @initiate_experiment
