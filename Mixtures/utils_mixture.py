@@ -2,6 +2,7 @@ import sys
 sys.path.append('..')
 
 import os
+import ot
 import torch
 import numpy as np
 import torch.nn as nn
@@ -14,6 +15,7 @@ from main_bayesian import getModel as getBayesianModel
 from main_frequentist import getModel as getFrequentistModel
 import config_mixtures as cfg
 import uncertainty_estimation as ue
+from layers import BBB_Linear, BBB_LRT_Linear
 
 
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -75,32 +77,6 @@ def get_splitmnist_models(num_tasks, bayesian=True, pretrained=False, weights_di
                 weight_path = weights_dir + f"model_{net_type}_{num_tasks}.{i}.pt"
             models[-1].load_state_dict(torch.load(weight_path))
     return models
-
-
-def get_mixture_model(num_tasks, weights_dir, net_type='lenet', include_last_layer=True):
-    """
-    Current implementation is based on average value of weights
-    """
-    net = getBayesianModel(net_type, 1, 5)
-    if not include_last_layer:
-        net.fc3 = Pass()
-
-    task_weights = []
-    for i in range(1, num_tasks + 1):
-        weight_path = weights_dir + f"model_{net_type}_{num_tasks}.{i}.pt"
-        task_weights.append(torch.load(weight_path))
-
-    mixture_weights = net.state_dict().copy()
-    layer_list = list(mixture_weights.keys())
-
-    for key in mixture_weights:
-        if key in layer_list:
-            concat_weights = torch.cat([w[key].unsqueeze(0) for w in task_weights] , dim=0)
-            average_weight = torch.mean(concat_weights, dim=0)
-            mixture_weights[key] = average_weight
-
-    net.load_state_dict(mixture_weights)
-    return net
 
 
 def predict_regular(net, validloader, bayesian=True, num_ens=10):
@@ -213,6 +189,107 @@ def predict_using_confidence_multi_model(nets, valid_loader, task_id):
         accs.append(get_task_accuracy(preds.detach().cpu().numpy(), labels.cpu().numpy(), model_preferred, task_target))
 
     return np.mean(accs), [m/np.sum(model_selected) for m in model_selected]
+
+
+def _get_barycentre_params(mu, sigma, average=False):
+    """
+    mu: (num_tasks,):: mean of nodes from respective models
+    sigma: (num_tasks,):: std_dev of nodes from respective models
+    average: boolean:: if average apply same weights else apply weights based on std_dev \
+                       lower std_dev => higher weight
+
+    returns: mu_t, sigma_t
+    """
+    assert type(mu) is np.ndarray
+    assert type(sigma) is np.ndarray
+
+    if average:
+        num_gaussians = mu.shape[0]
+        weights = np.array([1/num_gaussians] * num_gaussians)
+    else:
+        weights = 1 / sigma
+        weights /= weights.sum()
+
+    mu_t = np.dot(weights, mu)
+    sigma_t = np.dot(weights, sigma)
+
+    return mu_t, sigma_t
+
+
+def _get_mixture_weights(mu_layers, rho_layers, average=False):
+    assert type(mu_layers) is list
+    assert type(rho_layers) is list
+
+    init_weights_shape = mu_layers[0].shape
+    sigma_layers = [torch.log1p(torch.exp(layer_rho)) for layer_rho in rho_layers]
+
+    mu_layers = [layer_mu.flatten().numpy() for layer_mu in layers_mu]
+    sigma_layers = [layer_sigma.flatten().numpy() for layer_sigma in layers_sigma]
+
+    mu_mix = np.empty_like(mu_layers[0])
+    sigma_mix = np.empty_like(sigma_layers[0])
+
+    for i in range(mu_layers[0].shape[0]):
+        mu = np.array([layer[i] for layer in mu_layers])
+        sigma = np.array([layer[i] for layer in sigma_layers])
+        mu_mix[i], sigma_mix[i] = _get_barycentre_params(mu, sigma, average=average)
+
+    mu_mix = torch.from_numpy(mu_mix.reshape(init_weights_shape))
+    sigma_mix = torch.from_numpy(sigma_mix.reshape(init_weights_shape))
+    rho_mix = torch.log(torch.expm1(sigma_mix))
+
+    return mu_mix, rho_mix
+
+
+def get_mixture_model(num_tasks, weights_dir, average=False, net_type='lenet', layer_type='lrt', activation_type='softplus'):
+
+    inputs = 1  # MNIST
+    outputs = 10 // num_tasks
+    net = getBayesianModel(net_type, inputs, outputs, layer_type, activation_type)
+
+    task_weights = []
+    for i in range(1, num_tasks + 1):
+        weight_path = weights_dir + f"model_{net_type}_{layer_type}_{activation_type}_{num_tasks}.{i}.pt"
+        task_weights.append(torch.load(weight_path))
+
+    mixture_weights = net.state_dict().copy()
+    layer_list = list(mixture_weights.keys())
+    assert len(layer_list) % 2 == 0
+
+    # Last layer
+    last_layer_name = layer_list[-1].split('.')[0]
+    last_shape = tuple(mixture_weights[last_layer_name + '.W_mu'].shape)[::-1]
+    count = sum([1 if layer.startswith(last_layer_name) else 0 for layer in layer_list])
+    bias_last = True if count==4 else False
+
+    num_mix_layers = len(layer_list) - count  # Leave out last layer
+    for i in range(0, num_mix_layers, 2):
+        key_mu = layer_list[i]
+        key_rho = layer_list[i+1]
+        mu_layers = [tw[key_mu] for tw in task_weights]
+        rho_layers = [tw[key_rho] for tw in task_weights]
+        mixture_weights[key_mu], mixture_weights[key_rho] = \
+            _get_mixture_weights(mu_layers, rho_layers, average=average)
+
+    heads = []
+    for i in range(num_tasks):
+        if layer_type == 'bbb':
+            heads.append(BBB_Linear(*last_shape, bias=bias_last))
+        elif layer_type == 'lrt':
+            heads.append(BBB_LRT_Linear(*last_shape, bias=bias_last))
+        else:
+            raise ValueError
+
+        heads[-1].W_mu = torch.nn.Parameter(task_weights[i][last_layer_name + '.W_mu'])
+        heads[-1].W_rho = torch.nn.Parameter(task_weights[i][last_layer_name + '.W_rho'])
+        if bias_last:
+            heads[-1].bias_mu = torch.nn.Parameter(task_weights[i][last_layer_name + '.bias_mu'])
+            heads[-1].bias_rho = torch.nn.Parameter(task_weights[i][last_layer_name + '.bias_rho'])
+
+    net.load_state_dict(mixture_weights)
+    setattr(net, last_layer_name, Pass())
+
+    return net, heads
 
 
 def wip_predict_using_epistemic_uncertainty_with_mixture_model(model, fc3_1, fc3_2, valid_loader, T=10):
