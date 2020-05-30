@@ -149,4 +149,14 @@ If you are using this work, please cite:
 }
 ```
 
+```
+@article{shridhar2018uncertainty,
+  title={Uncertainty estimations by softplus normalization in bayesian convolutional neural networks with variational inference},
+  author={Shridhar, Kumar and Laumann, Felix and Liwicki, Marcus},
+  journal={arXiv preprint arXiv:1806.05978},
+  year={2018}
+}
+}
+```
+
 --------------------------------------------------------------------------------------------------------
