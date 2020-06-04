@@ -1,5 +1,5 @@
 import torch.nn as nn
-from .mixture_layers import MixtureLinear, MixtureConv2d
+from mixture_layers import MixtureLinear, MixtureConv2d
 from layers import FlattenLayer, ModuleWrapper
 
 
@@ -9,10 +9,10 @@ def _get_individual_model_weights(layer, individual_weights, bias=False):
     individual_weights: List
     """
     if bias:
-        return [weights[layer + '.bias_mu'] for weights in individual_weights],
-               [weights[layer + '.bias_rho'] for weights in individual_weights]
-    return [weights[layer + '.W_mu'] for weights in individual_weights],
-           [weights[layer + '.W_rho'] for weights in individual_weights]
+        return ([weights[layer + '.bias_mu'] for weights in individual_weights],
+                [weights[layer + '.bias_rho'] for weights in individual_weights])
+    return ([weights[layer + '.W_mu'] for weights in individual_weights],
+            [weights[layer + '.W_rho'] for weights in individual_weights])
 
 
 def W_individual(layer, individual_weights):

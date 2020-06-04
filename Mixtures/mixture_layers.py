@@ -81,7 +81,7 @@ class MixtureLinear(ModuleWrapper):
 class MixtureConv2d(ModuleWrapper):
     def __init__(self, in_channels, out_channels, kernel_size,
                  num_tasks, W_mu_individual, W_rho_individual,
-                 bias=True, bias_mu_individual=None, bias_rho_individual=None
+                 bias=True, bias_mu_individual=None, bias_rho_individual=None,
                  stride=1, padding=0, dilation=1):
         """
         W_mu_individual and W_rho_individual are lists containing

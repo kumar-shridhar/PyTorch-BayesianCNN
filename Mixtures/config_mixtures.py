@@ -1,5 +1,5 @@
 ############### Configuration file for Training of SplitMNIST and Mixtures ###############
-layer_type = 'lrt'
+layer_type = 'bbb'
 activation_type = 'softplus'
 priors={
     'prior_mu': 0,
