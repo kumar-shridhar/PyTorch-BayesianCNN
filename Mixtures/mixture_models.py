@@ -1,6 +1,6 @@
 import torch.nn as nn
 from mixture_layers import MixtureLinear, MixtureConv2d
-from layers import FlattenLayer, ModuleWrapper
+from layers import BBB_Linear, FlattenLayer, ModuleWrapper
 
 
 def _get_individual_model_weights(layer, individual_weights, bias=False):
@@ -59,5 +59,4 @@ class MixtureLeNet(ModuleWrapper):
                                  bias=True, **bias_individual('fc2', individual_weights))
         self.act4 = self.act()
 
-        self.fc3 = MixtureLinear(84, outputs, num_tasks, *W_individual('fc3', individual_weights),
-                                 bias=True, **bias_individual('fc3', individual_weights))
+        self.fc3 = BBB_Linear(84, outputs, bias=True)
