@@ -15,3 +15,7 @@ valid_size = 0.2
 batch_size = 256
 train_ens = 10
 valid_ens = 5
+
+
+# Global variables
+distribution_updated = None

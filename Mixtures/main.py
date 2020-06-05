@@ -17,6 +17,7 @@ import metrics
 import utils_mixture
 from mixture_models import MixtureLeNet
 from main_bayesian import train_model, validate_model
+import config_mixtures as cfg
 
 # CUDA settings
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
@@ -34,10 +35,10 @@ if __name__ == '__main__':
     num_tasks = 2
     weights_dir = "checkpoints/MNIST/bayesian/splitted/{}-tasks/".format(num_tasks)
     ckpt_name = weights_dir + f"mixture_model_{num_tasks}.pt"
-    lr_start = 0.1
-    n_epochs = 50
-    train_ens = 25
-    valid_ens = 25
+    lr_start = 0.01
+    n_epochs = 100
+    train_ens = 10
+    valid_ens = 10
 
     data_loaders = utils_mixture.get_splitmnist_dataloaders(num_tasks)
 
@@ -70,6 +71,7 @@ if __name__ == '__main__':
                 loss = criterion(output, target)
                 loss.backward()
                 optimizer.step()
+                cfg.distribution_updated = True
                 train_loss += loss.item() / len(data_loaders[t][1])
                 accs.append(metrics.acc(output.detach(), target))
         train_acc = np.mean(accs)
