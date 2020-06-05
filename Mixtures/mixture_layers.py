@@ -17,6 +17,7 @@ def GaussianMixtureModel(pi, mu, sigma):
     mu (torch.tensor): (features, num_tasks)
     sigma (torch.tensor): (features, num_tasks)
     """
+    pi = pi.div(pi.sum(dim=-1, keepdims=True))
     mixture = D.Categorical(pi)
     components = D.Normal(mu, sigma)
     return D.MixtureSameFamily(mixture, components)
