@@ -8,7 +8,6 @@ import torch.nn.functional as F
 import torch.distributions as D
 from torch.nn import Parameter
 
-from metrics import calculate_kl as KL_DIV
 from layers.misc import ModuleWrapper
 
 
@@ -30,7 +29,7 @@ class MixtureLinear(ModuleWrapper):
         W_mu_individual and W_rho_individual are lists containing
         W_mus and W_rhos of individual models
         """
-        super(BBBLinear, self).__init__()
+        super(MixtureLinear, self).__init__()
         self.in_features = in_features
         self.out_features = out_features
         self.use_bias = bias
@@ -52,16 +51,16 @@ class MixtureLinear(ModuleWrapper):
         self.reset_parameters(num_tasks, W_mu_individual, W_rho_individual, bias_mu_individual, bias_rho_individual)
 
     def reset_parameters(self, num_tasks, W_mu_individual, W_rho_individual, bias_mu_individual, bias_rho_individual):
-        self.W_pi.fill_(1. / num_tasks)
+        self.W_pi.data.fill_(1. / num_tasks)
         for i in range(num_tasks):
-            self.W_mu[..., i] = W_mu_individual[i]
-            self.W_rho[..., i] = W_rho_individual[i]
+            self.W_mu.data[..., i] = W_mu_individual[i].data
+            self.W_rho.data[..., i] = W_rho_individual[i].data
 
         if self.use_bias:
-            self.bias_pi.fill_(1. / num_tasks)
+            self.bias_pi.data.fill_(1. / num_tasks)
             for i in range(num_tasks):
-                self.bias_mu[:, i] = bias_mu_individual[i]
-                self.bias_rho[:, i] = bias_rho_individual[i]
+                self.bias_mu.data[:, i] = bias_mu_individual[i].data
+                self.bias_rho.data[:, i] = bias_rho_individual[i].data
 
     def forward(self, input, sample=True):
         W_sigma = torch.log1p(torch.exp(self.W_rho))
@@ -87,7 +86,7 @@ class MixtureConv2d(ModuleWrapper):
         W_mu_individual and W_rho_individual are lists containing
         W_mus and W_rhos of individual models
         """
-        super(BBBConv2d, self).__init__()
+        super(MixtureConv2d, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
         self.kernel_size = (kernel_size, kernel_size)
@@ -114,16 +113,16 @@ class MixtureConv2d(ModuleWrapper):
         self.reset_parameters(num_tasks, W_mu_individual, W_rho_individual, bias_mu_individual, bias_rho_individual)
 
     def reset_parameters(self, num_tasks, W_mu_individual, W_rho_individual, bias_mu_individual, bias_rho_individual):
-        self.W_pi.fill_(1. / num_tasks)
+        self.W_pi.data.fill_(1. / num_tasks)
         for i in range(num_tasks):
-            self.W_mu[..., i] = W_mu_individual[i]
-            self.W_rho[..., i] = W_rho_individual[i]
+            self.W_mu.data[..., i] = W_mu_individual[i].data
+            self.W_rho.data[..., i] = W_rho_individual[i].data
 
         if self.use_bias:
-            self.bias_pi.fill_(1. / num_tasks)
+            self.bias_pi.data.fill_(1. / num_tasks)
             for i in range(num_tasks):
-                self.bias_mu[:, i] = bias_mu_individual[i]
-                self.bias_rho[:, i] = bias_rho_individual[i]
+                self.bias_mu.data[:, i] = bias_mu_individual[i].data
+                self.bias_rho.data[:, i] = bias_rho_individual[i].data
 
     def forward(self, input, sample=True):
         W_sigma = torch.log1p(torch.exp(self.W_rho))
