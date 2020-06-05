@@ -1,117 +1,106 @@
+"""
+It is assumed that `weights_dir` contains bayesian models trained on individual
+tasks using Bayes by Backprop on trainset.
+
+This script will be used to train MixtureModel having Gaussian Mixture weights
+on validset using Cross_Entropy_Loss as a loss function. And test the same on testset.
+"""
 import sys
 sys.path.append('..')
 
-import os
 import torch
+import torch.nn as nn
+from torch.optim import Adam, lr_scheduler
 import numpy as np
-from collections import OrderedDict
 
-import gmm
-import utils
+import metrics
 import utils_mixture
-import config_bayesian as cfg
+from mixture_models import MixtureLeNet
+from main_bayesian import train_model, validate_model
+
+# CUDA settings
+device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
 
-def feedforward_and_save_mean_var(net, dataloader, task_no, num_ens=1):
-    cfg.mean_var_dir = "Mixtures/mean_vars/task-{}/".format(task_no)
-    if not os.path.exists(cfg.mean_var_dir):
-        os.makedirs(cfg.mean_var_dir, exist_ok=True)
-        cfg.record_mean_var = True
-        cfg.record_layers = None  # All layers
-        cfg.record_now = True
-        cfg.curr_batch_no = 0  # Not required
-        cfg.curr_epoch_no = 0  # Not required
-
-    net.train()  # To get distribution of mean and var
-    accs = []
-
-    for i, (inputs, labels) in enumerate(dataloader):
-        inputs, labels = inputs.to(device), labels.to(device)
-        outputs = torch.zeros(inputs.shape[0], net.num_classes, num_ens).to(device)
-        kl = 0.0
-        for j in range(num_ens):
-            net_out, _kl = net(inputs)
-            kl += _kl
-            outputs[:, :, j] = F.log_softmax(net_out, dim=1).data
-
-        log_outputs = utils.logmeanexp(outputs, dim=2)
-        accs.append(metrics.acc(log_outputs, labels))
-    return np.mean(accs)
-
-
-def _get_ordered_layer_name(mean_var_path):
-    # Order files according to creation time
-    files = os.listdir(mean_var_path)
-    files = [os.path.join(mean_var_path, f) for f in files]
-    files.sort(key=os.path.getctime)
-    layer_names = [f.split('/')[-1].split('.')[0] for f in files]
-    return layer_names
-
-
-def _get_layer_wise_mean_var_per_task(mean_var_path):
-    # Order files according to creation time
-    # To get the correct model architecture
-    files = os.listdir(mean_var_path)
-    files = [os.path.join(mean_var_path, f) for f in files]
-    files.sort(key=os.path.getctime)
-    layer_names = [f.split('/')[-1].split('.')[0] for f in files]
-
-    mean_var = OrderedDict()
-    for i in range(len(files)):
-        data = {}
-        mean, var = utils.load_mean_std_from_file(files[i])
-        mean, var = np.vstack(mean), np.vstack(var)  # shape is (len(trainset), output shape)
-        data['mean'] = mean
-        data['var'] = var
-        data['mean.mu'] = np.mean(mean, axis=0)
-        data['var.mu'] = np.mean(var, axis=0)
-        data['mean.var'] = np.var(mean, axis=0)
-        data['var.var'] = np.var(var, axis=0)
-        mean_var[layer_names[i]] = data
-    return mean_var
-
-
-def get_mean_vars_for_all_tasks(mean_var_dir):
-    all_tasks = {}
-    for task in os.listdir(mean_var_dir):
-        path_to_task = os.path.join(mean_var_dir, task)
-        mean_var_per_task = _get_layer_wise_mean_var_per_task(path_to_task)
-        all_tasks[task] = mean_var_per_task
-    return all_tasks
-
-
-def fit_to_gmm(num_tasks, layer_name, data_type, all_tasks):
-    data = np.vstack([all_tasks[f'task-{i}'][layer_name][data_type] for i in range(1, num_tasks+1)])
-    data = torch.tensor(data).float()
-    #data_mu = torch.cat([torch.tensor(all_tasks[f'task-{i}'][layer_name][data_type+'.mu']).unsqueeze(0) for i in range(1, num_tasks+1)], dim=0).float().unsqueeze(0)
-    #data_var = torch.cat([torch.tensor(all_tasks[f'task-{i}'][layer_name][data_type+'.var']).unsqueeze(0) for i in range(1, num_tasks+1)], dim=0).float().unsqueeze(0)
-    model = gmm.GaussianMixture(n_components=num_tasks, n_features=np.prod(data.shape[1:]))#, mu_init=data_mu, var_init=data_var)
-    data = data[torch.randperm(data.size()[0])]  # Shuffling of data
-    model.fit(data)
-    return model.predict(data)
-
-
-def main():
-    num_tasks = 2
-    weights_dir = "checkpoints/MNIST/bayesian/splitted/2-tasks/"
-
-    loader_task1, loader_task2 = utils_mixture.get_splitmnist_dataloaders(num_tasks)
-    train_loader_task1 = loader_task1[0]
-    train_loader_task2 = loader_task2[0]
-
-    net_task1, net_task2 = utils_mixture.get_splitmnist_models(num_tasks, True, weights_dir)
-    net_task1.cuda()
-    net_task2.cuda()
-
-    print("Task-1 Accuracy:", feedforward_and_save_mean_var(net_task1, train_loader_task1, task_no=1))
-    print("Task-2 Accuracy:", feedforward_and_save_mean_var(net_task2, train_loader_task2, task_no=2))
-
-    mean_vars_all_tasks = get_mean_vars_for_all_tasks("Mixtures/mean_vars/")
-    
+def get_individual_weights(num_tasks, weights_dir):
+    task_weights = []
+    for i in range(1, num_tasks + 1):
+        weight_path = weights_dir + f"model_lenet_bbb_softplus_{num_tasks}.{i}.pt"
+        task_weights.append(torch.load(weight_path, map_location=device))
+    return task_weights
 
 
 if __name__ == '__main__':
-    all_tasks = get_mean_vars_for_all_tasks("Mixtures/mean_vars/")
-    y = fit_to_gmm(2, 'fc3', 'mean', all_tasks)
-    print("Cluster0", (1-y).sum())
-    print("Cluster1", y.sum())
+    num_tasks = 2
+    weights_dir = "checkpoints/MNIST/bayesian/splitted/{}-tasks/".format(num_tasks)
+    ckpt_name = weights_dir + f"mixture_model_{num_tasks}.pt"
+    lr_start = 0.1
+    n_epochs = 50
+    train_ens = 25
+    valid_ens = 25
+
+    data_loaders = utils_mixture.get_splitmnist_dataloaders(num_tasks)
+
+    individual_weights = get_individual_weights(num_tasks, weights_dir)
+    net = MixtureLeNet(10, 1, num_tasks, individual_weights)
+
+    # TODO: get shuffled validloaders with incremented labels
+    criterion = nn.CrossEntropyLoss(reduction='mean').to(device)
+    optimizer = Adam(net.parameters(), lr=lr_start)
+    lr_sched = lr_scheduler.ReduceLROnPlateau(optimizer, patience=4, verbose=True)
+
+    valid_loss_max = np.Inf
+    for epoch in range(n_epochs):
+        # training loop
+        train_loss = 0.0
+        accs = []
+        for t in range(num_tasks):
+            for inputs, target in data_loaders[t][1]:  # valid_loaders
+                optimizer.zero_grad()
+
+                inputs, target = inputs.to(device), target.to(device)
+                target += t * 10 // num_tasks  # last fc has 10 nodes
+
+                outputs = torch.zeros(inputs.shape[0], net.num_classes, train_ens).to(device)
+                for j in range(train_ens):
+                    net_out, _ = net(inputs)
+                    outputs[:, :, j] = net_out
+
+                output = outputs.mean(dim=2)
+                loss = criterion(output, target)
+                loss.backward()
+                optimizer.step()
+                train_loss += loss.item() / len(data_loaders[t][1])
+                accs.append(metrics.acc(output.detach(), target))
+        train_acc = np.mean(accs)
+
+        # validation loop
+        valid_loss = 0.0
+        accs = []
+        for t in range(num_tasks):
+            for inputs, target in data_loaders[t][2]:  # test_loaders
+                inputs, target = inputs.to(device), target.to(device)
+                target += t * 10 // num_tasks  # last fc has 10 nodes
+
+                outputs = torch.zeros(inputs.shape[0], net.num_classes, train_ens).to(device)
+                for j in range(train_ens):
+                    net_out, _ = net(inputs)
+                    outputs[:, :, j] = net_out
+
+                output = outputs.mean(dim=2)
+                loss = criterion(output, target)
+                valid_loss += loss.item() / len(data_loaders[t][2])
+                accs.append(metrics.acc(output.detach(), target))
+        valid_acc = np.mean(accs)
+
+        print('Epoch: {} \tTraining Loss: {:.4f} \tTraining Accuracy: {:.4f} \tValidation Loss: {:.4f} \tValidation Accuracy: {:.4f}'.format(
+            epoch, train_loss, train_acc, valid_loss, valid_acc))
+
+        lr_sched.step(valid_loss)
+
+        # save model if validation accuracy has increased
+        if valid_loss <= valid_loss_max:
+            print('Validation loss decreased ({:.6f} --> {:.6f}).  Saving model ...'.format(
+                valid_loss_max, valid_loss))
+            torch.save(net.state_dict(), ckpt_name)
+            valid_loss_max = valid_loss
