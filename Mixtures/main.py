@@ -10,7 +10,7 @@ sys.path.append('..')
 
 import torch
 import torch.nn as nn
-from torch.optim import Adam, lr_scheduler
+from torch import optim
 import numpy as np
 
 import metrics
@@ -35,7 +35,7 @@ if __name__ == '__main__':
     num_tasks = 2
     weights_dir = "checkpoints/MNIST/bayesian/splitted/{}-tasks/".format(num_tasks)
     ckpt_name = weights_dir + f"mixture_model_{num_tasks}.pt"
-    lr_start = 0.01
+    lr_start = 0.001
     n_epochs = 100
     train_ens = 10
     valid_ens = 10
@@ -44,11 +44,12 @@ if __name__ == '__main__':
 
     individual_weights = get_individual_weights(num_tasks, weights_dir)
     net = MixtureLeNet(10, 1, num_tasks, individual_weights)
+    net.cuda()
 
     # TODO: get shuffled validloaders with incremented labels
     criterion = nn.CrossEntropyLoss(reduction='mean').to(device)
-    optimizer = Adam(net.parameters(), lr=lr_start)
-    lr_sched = lr_scheduler.ReduceLROnPlateau(optimizer, patience=4, verbose=True)
+    optimizer = optim.Adam(net.parameters(), lr=lr_start)
+    lr_sched = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=7, verbose=True)
 
     valid_loss_max = np.Inf
     for epoch in range(n_epochs):
