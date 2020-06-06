@@ -38,7 +38,8 @@ def train_splitted(num_tasks, bayesian=True, net_type='lenet'):
     if not os.path.exists(ckpt_dir):
         os.makedirs(ckpt_dir, exist_ok=True)
 
-    loaders, datasets = mix_utils.get_splitmnist_dataloaders(num_tasks, return_datasets=True)
+    pickle_path = "checkpoints/MNIST/bayesian/splitted/{}-tasks/loaders.pkl".format(num_tasks)
+    loaders, datasets = mix_utils.unpickle_dataloaders(pickle_path)
     models = mix_utils.get_splitmnist_models(
         num_tasks, bayesian=bayesian, pretrained=False, priors=priors,
         net_type=net_type, layer_type=layer_type, activation_type=activation_type)

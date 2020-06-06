@@ -54,6 +54,28 @@ def get_splitmnist_dataloaders(num_tasks, return_datasets=False):
     return loaders
 
 
+def pickle_dataloaders(num_tasks):
+    """
+    This method should be executed from root directory as follows:
+
+    ```python
+    >>> import sys
+    >>> sys.path.append('Mixtures/')
+    >>> import utils_mixture
+    >>> utils_mixture.pickle_dataloaders(2)
+    >>>
+    ```
+    """
+    pickle_path = "checkpoints/MNIST/bayesian/splitted/{}-tasks/loaders.pkl".format(num_tasks)
+    obj = get_splitmnist_dataloaders(num_tasks, return_datasets=True)
+    with open(pickle_path, 'wb') as file:
+        torch.save(obj, file)
+
+
+def unpickle_dataloaders(pickle_path):
+    return torch.load(pickle_path)
+
+
 def get_splitmnist_models(num_tasks, bayesian=True, pretrained=False, weights_dir=None, priors=None,
                           net_type='lenet', layer_type='lrt', activation_type='softplus'):
     inputs = 1

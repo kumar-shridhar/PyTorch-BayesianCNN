@@ -35,12 +35,13 @@ if __name__ == '__main__':
     num_tasks = 2
     weights_dir = "checkpoints/MNIST/bayesian/splitted/{}-tasks/".format(num_tasks)
     ckpt_name = weights_dir + f"mixture_model_{num_tasks}.pt"
-    lr_start = 0.001
+    lr_start = 0.01
     n_epochs = 100
     train_ens = 10
     valid_ens = 10
 
-    data_loaders = utils_mixture.get_splitmnist_dataloaders(num_tasks)
+    pickle_path = "checkpoints/MNIST/bayesian/splitted/{}-tasks/loaders.pkl".format(num_tasks)
+    data_loaders, _ = utils_mixture.unpickle_dataloaders(pickle_path)
 
     individual_weights = get_individual_weights(num_tasks, weights_dir)
     net = MixtureLeNet(10, 1, num_tasks, individual_weights)
