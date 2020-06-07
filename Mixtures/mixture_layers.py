@@ -155,3 +155,49 @@ class MixtureConv2d(ModuleWrapper):
             bias = None
 
         return F.conv2d(input, weight, bias, self.stride, self.padding, self.dilation, self.groups)
+
+
+class MixtureClassifier(ModuleWrapper):
+    def __init__(self, in_features, out_features, num_tasks, W_mu_individual, W_rho_individual,
+                 bias=True, bias_mu_individual=None, bias_rho_individual=None):
+        super(MixtureClassifier, self).__init__()
+        self.in_features = in_features
+        self.out_features = out_features
+        self.use_bias = bias
+        self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+        self.W_mu = Parameter(torch.empty((out_features, in_features), device=self.device))
+        self.W_rho = Parameter(torch.empty((out_features, in_features), device=self.device))
+
+        if self.use_bias:
+            self.bias_mu = Parameter(torch.empty((out_features), device=self.device))
+            self.bias_rho = Parameter(torch.empty((out_features), device=self.device))
+        else:
+            self.register_parameter('bias_mu', None)
+            self.register_parameter('bias_rho', None)
+
+        self.reset_parameters(num_tasks, W_mu_individual, W_rho_individual, bias_mu_individual, bias_rho_individual)
+
+    def reset_parameters(self, num_tasks, W_mu_individual, W_rho_individual, bias_mu_individual, bias_rho_individual):
+        for i in range(num_tasks):
+            self.W_mu.data[i * 10 // num_tasks:(i+1) * 10 // num_tasks, :] = W_mu_individual[i].data
+            self.W_rho.data[i * 10 // num_tasks:(i+1) * 10 // num_tasks, :] = W_rho_individual[i].data
+
+        if self.use_bias:
+            for i in range(num_tasks):
+                self.bias_mu.data[i * 10 // num_tasks:(i+1) * 10 // num_tasks] = bias_mu_individual[i].data
+                self.bias_rho.data[i * 10 // num_tasks:(i+1) * 10 // num_tasks] = bias_rho_individual[i].data
+
+    def forward(self, input, sample=True):
+        W_eps = torch.empty(self.W_mu.size()).normal_(0, 1).to(self.device)
+        W_sigma = torch.log1p(torch.exp(self.W_rho))
+        weight = self.W_mu + W_eps * W_sigma
+
+        if self.use_bias:
+            bias_eps = torch.empty(self.bias_mu.size()).normal_(0, 1).to(self.device)
+            self.bias_sigma = torch.log1p(torch.exp(self.bias_rho))
+            bias = self.bias_mu + bias_eps * self.bias_sigma
+        else:
+            bias = None
+
+        return F.linear(input, weight, bias)

@@ -1,5 +1,5 @@
 import torch.nn as nn
-from mixture_layers import MixtureLinear, MixtureConv2d
+from mixture_layers import MixtureLinear, MixtureConv2d, MixtureClassifier
 from layers import BBB_Linear, FlattenLayer, ModuleWrapper
 
 
@@ -59,4 +59,5 @@ class MixtureLeNet(ModuleWrapper):
                                  bias=True, **bias_individual('fc2', individual_weights))
         self.act4 = self.act()
 
-        self.fc3 = BBB_Linear(84, outputs, bias=True)
+        self.fc3 = MixtureClassifier(84, outputs, num_tasks, *W_individual('fc3', individual_weights),
+                                     bias=True, **bias_individual('fc3', individual_weights))

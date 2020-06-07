@@ -1,5 +1,5 @@
 ############### Configuration file for Bayesian ###############
-layer_type = 'lrt'  # 'bbb' or 'lrt'
+layer_type = 'bbb'  # 'bbb' or 'lrt'
 activation_type = 'softplus'  # 'softplus' or 'relu'
 priors={
     'prior_mu': 0,
@@ -13,6 +13,6 @@ lr_start = 0.001
 num_workers = 4
 valid_size = 0.2
 batch_size = 256
-train_ens = 1
-valid_ens = 1
+train_ens = 10
+valid_ens = 10
 beta_type = 0.1  # 'Blundell', 'Standard', etc. Use float for const value
