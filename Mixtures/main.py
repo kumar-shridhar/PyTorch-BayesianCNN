@@ -8,10 +8,13 @@ on validset using Cross_Entropy_Loss as a loss function. And test the same on te
 import sys
 sys.path.append('..')
 
+import copy
 import torch
 import torch.nn as nn
 from torch import optim
 import numpy as np
+import scipy.stats as sps
+import matplotlib.pyplot as plt
 
 import metrics
 import utils_mixture
@@ -21,6 +24,132 @@ import config_mixtures as cfg
 
 # CUDA settings
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
+
+
+def densite_theorique(pi, mu, sigma, x):
+    K = mu.shape[0]
+    y = 0
+    for i in range(K):
+        y += pi[i] * sps.norm.pdf(x, loc=mu[i], scale=sigma[i])
+    return y.reshape(x.shape)
+
+
+def plot_gmm(model, layer, node, interval=None, bias=False):
+    if layer.startswith('conv'):
+        assert len(node) == 4 or len(node) == 3
+    if layer.startswith('fc') or layer == "classifier":
+        assert len(node) == 2 or len(node) == 1
+
+    node = tuple(list(node) + [slice(None),])
+    pi = getattr(model, layer).W_pi.data[node]
+    mu = getattr(model, layer).W_mu.data[node] if not bias else getattr(model, layer).bias_mu.data[node]
+    rho = getattr(model, layer).W_rho.data[node] if not bias else getattr(model, layer).bias_rho.data[node]
+
+    pi = pi / pi.sum()
+    sigma = torch.log1p(torch.exp(rho))
+
+    if not interval:
+        interval = (-1, 1)
+
+    x = np.linspace(*interval, num=1000)
+    pdf = densite_theorique(pi.cpu(), mu.cpu(), sigma.cpu(), x)
+    pdf = pdf / pdf.sum()
+    plt.plot(x, pdf)
+    plt.show()
+
+
+def plot_gmm_initial_final(model_init, model_final, layer, node, interval=None, bias=False):
+    if layer.startswith('conv'):
+        assert len(node) == 4 or len(node) == 3
+    if layer.startswith('fc') or layer == "classifier":
+        assert len(node) == 2 or len(node) == 1
+
+    node = tuple(list(node) + [slice(None),])
+    pi = getattr(model_init, layer).W_pi.data[node]
+    mu = getattr(model_init, layer).W_mu.data[node] if not bias else getattr(model_init, layer).bias_mu.data[node]
+    rho = getattr(model_init, layer).W_rho.data[node] if not bias else getattr(model_init, layer).bias_rho.data[node]
+
+    pi = pi / pi.sum()
+    sigma = torch.log1p(torch.exp(rho))
+
+    print("Initial pi:", pi)
+    print("Initial mu:", mu)
+    print("Initial sigma:", sigma)
+
+    if not interval:
+        interval = (-1, 1)
+
+    x = np.linspace(*interval, num=1000)
+    pdf_init = densite_theorique(pi.cpu(), mu.cpu(), sigma.cpu(), x)
+    pdf_init = pdf_init / pdf_init.sum()
+    plt.plot(x, pdf_init, c='b', label='initial')
+
+
+    pi = getattr(model_final, layer).W_pi.data[node]
+    mu = getattr(model_final, layer).W_mu.data[node] if not bias else getattr(model_final, layer).bias_mu.data[node]
+    rho = getattr(model_final, layer).W_rho.data[node] if not bias else getattr(model_final, layer).bias_rho.data[node]
+
+    pi = pi / pi.sum()
+    sigma = torch.log1p(torch.exp(rho))
+
+    print("Final pi:", pi)
+    print("Final mu:", mu)
+    print("Final sigma:", sigma)
+
+    if not interval:
+        interval = (-1, 1)
+
+    x = np.linspace(*interval, num=1000)
+    pdf_final = densite_theorique(pi.cpu(), mu.cpu(), sigma.cpu(), x)
+    pdf_final = pdf_final / pdf_final.sum()
+    plt.plot(x, pdf_final, c='r', label='final')
+
+    plt.show()
+
+
+def plot_gaussian_initial_final(model_init, model_final, node, interval=None, bias=False):
+    layer = 'fc3'
+    assert len(node) == 2 or len(node) == 1
+
+    node = tuple(node)
+    pi = torch.tensor([1])
+    mu = getattr(model_init, layer).W_mu.data[node] if not bias else getattr(model_init, layer).bias_mu.data[node]
+    rho = getattr(model_init, layer).W_rho.data[node] if not bias else getattr(model_init, layer).bias_rho.data[node]
+
+    sigma = torch.log1p(torch.exp(rho))
+
+    print("Initial pi:", pi)
+    print("Initial mu:", mu)
+    print("Initial sigma:", sigma)
+
+    if not interval:
+        interval = (-1, 1)
+
+    x = np.linspace(*interval, num=1000)
+    pdf_init = densite_theorique(pi.cpu(), mu.unsqueeze(0).cpu(), sigma.unsqueeze(0).cpu(), x)
+    pdf_init = pdf_init / pdf_init.sum()
+    plt.plot(x, pdf_init, c='b', label='initial')
+
+
+    pi = torch.tensor([1])
+    mu = getattr(model_final, layer).W_mu.data[node] if not bias else getattr(model_final, layer).bias_mu.data[node]
+    rho = getattr(model_final, layer).W_rho.data[node] if not bias else getattr(model_final, layer).bias_rho.data[node]
+
+    sigma = torch.log1p(torch.exp(rho))
+
+    print("Final pi:", pi)
+    print("Final mu:", mu)
+    print("Final sigma:", sigma)
+
+    if not interval:
+        interval = (-1, 1)
+
+    x = np.linspace(*interval, num=1000)
+    pdf_final = densite_theorique(pi.cpu(), mu.unsqueeze(0).cpu(), sigma.unsqueeze(0).cpu(), x)
+    pdf_final = pdf_final / pdf_final.sum()
+    plt.plot(x, pdf_final, c='r', label='final')
+
+    plt.show()
 
 
 def get_individual_weights(num_tasks, weights_dir):
@@ -35,8 +164,8 @@ if __name__ == '__main__':
     num_tasks = 2
     weights_dir = "checkpoints/MNIST/bayesian/splitted/{}-tasks/".format(num_tasks)
     ckpt_name = weights_dir + f"mixture_model_{num_tasks}.pt"
-    lr_start = 0.01
-    n_epochs = 100
+    lr_start = 0.001
+    n_epochs = 50
     train_ens = 10
     valid_ens = 10
 
@@ -46,6 +175,8 @@ if __name__ == '__main__':
     individual_weights = get_individual_weights(num_tasks, weights_dir)
     net = MixtureLeNet(10, 1, num_tasks, individual_weights)
     net.cuda()
+
+    net_init = copy.deepcopy(net)
 
     # TODO: get shuffled validloaders with incremented labels
     criterion = nn.CrossEntropyLoss(reduction='mean').to(device)
@@ -108,3 +239,18 @@ if __name__ == '__main__':
                 valid_loss_max, valid_loss))
             torch.save(net.state_dict(), ckpt_name)
             valid_loss_max = valid_loss
+
+    layer = 'fc2'
+    print("Distributions of layer", layer)
+    for i in range(10):
+        node = [np.random.randint(0, 84), np.random.randint(0, 120)]
+        print("Node:", node)
+        plot_gmm_initial_final(net_init, net, layer, node)
+        print()
+
+    print("Distributions for layer fc3")
+    for i in range(10):
+        node = [np.random.randint(0, 10), np.random.randint(0, 84)]
+        print("Node:", node)
+        plot_gaussian_initial_final(net_init, net, node)
+        print()
