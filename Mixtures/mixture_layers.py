@@ -79,18 +79,19 @@ class MixtureLinear(ModuleWrapper):
         self.reset_parameters(num_tasks, W_mu_individual, W_rho_individual, bias_mu_individual, bias_rho_individual)
 
     def reset_parameters(self, num_tasks, W_mu_individual, W_rho_individual, bias_mu_individual, bias_rho_individual):
-        W_sigma = torch.log1p(torch.exp(self.W_rho))
-        self.W_pi.data = 1 / W_sigma
         for i in range(num_tasks):
             self.W_mu.data[..., i] = W_mu_individual[i].data
             self.W_rho.data[..., i] = W_rho_individual[i].data
-
         if self.use_bias:
-            bias_sigma = torch.log1p(torch.exp(self.bias_rho))
-            self.bias_pi.data = 1 / bias_sigma
             for i in range(num_tasks):
                 self.bias_mu.data[:, i] = bias_mu_individual[i].data
                 self.bias_rho.data[:, i] = bias_rho_individual[i].data
+
+        W_sigma = torch.log1p(torch.exp(self.W_rho))
+        self.W_pi.data = 1 / W_sigma
+        if self.use_bias:
+            bias_sigma = torch.log1p(torch.exp(self.bias_rho))
+            self.bias_pi.data = 1 / bias_sigma
 
     def forward(self, input):
         W_sigma = torch.log1p(torch.exp(self.W_rho))
@@ -142,18 +143,19 @@ class MixtureConv2d(ModuleWrapper):
         self.reset_parameters(num_tasks, W_mu_individual, W_rho_individual, bias_mu_individual, bias_rho_individual)
 
     def reset_parameters(self, num_tasks, W_mu_individual, W_rho_individual, bias_mu_individual, bias_rho_individual):
-        W_sigma = torch.log1p(torch.exp(self.W_rho))
-        self.W_pi.data = 1 / W_sigma
         for i in range(num_tasks):
             self.W_mu.data[..., i] = W_mu_individual[i].data
             self.W_rho.data[..., i] = W_rho_individual[i].data
-
         if self.use_bias:
-            bias_sigma = torch.log1p(torch.exp(self.bias_rho))
-            self.bias_pi.data = 1 / bias_sigma
             for i in range(num_tasks):
                 self.bias_mu.data[:, i] = bias_mu_individual[i].data
                 self.bias_rho.data[:, i] = bias_rho_individual[i].data
+
+        W_sigma = torch.log1p(torch.exp(self.W_rho))
+        self.W_pi.data = 1 / W_sigma
+        if self.use_bias:
+            bias_sigma = torch.log1p(torch.exp(self.bias_rho))
+            self.bias_pi.data = 1 / bias_sigma
 
     def forward(self, input):
         W_sigma = torch.log1p(torch.exp(self.W_rho))
