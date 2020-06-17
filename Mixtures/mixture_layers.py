@@ -9,19 +9,45 @@ import torch.distributions as D
 from torch.nn import Parameter
 
 from layers.misc import ModuleWrapper
-import config_mixtures as cfg
 
 
-def GaussianMixtureModel(pi, mu, sigma):
-    """
-    pi (torch.tensor): (features, num_tasks)
-    mu (torch.tensor): (features, num_tasks)
-    sigma (torch.tensor): (features, num_tasks)
-    """
-    pi = pi.div(pi.sum(dim=-1, keepdims=True))
-    mixture = D.Categorical(pi)
-    components = D.Normal(mu, sigma)
-    return D.MixtureSameFamily(mixture, components)
+def _sample_gumbel(shape, eps=1e-20):
+    U = torch.rand(shape)
+    return -torch.log(-torch.log(U + eps) + eps)
+
+
+def _gumbel_softmax_sample(logits):
+    temperature = 0.1
+    sample = _sample_gumbel(logits.size()[-1])
+    if logits.is_cuda:
+        sample = sample.cuda()
+    y = logits + sample
+    return F.softmax(y / temperature, dim=-1)
+
+
+def _gumbel_softmax(pi, hard):
+    logits = torch.log(pi)
+    y = _gumbel_softmax_sample(logits)
+    if not hard:
+        return y
+
+    shape = y.size()
+    _, ind = y.max(dim=-1)
+    y_hard = torch.zeros_like(y).view(-1, shape[-1])
+    y_hard.scatter_(1, ind.view(-1, 1), 1)
+    y_hard = y_hard.view(*shape)
+    y_hard = (y_hard - y).detach() + y
+    return y_hard
+
+
+def sample_gmm(pi, mu, sigma):
+    idx = _gumbel_softmax(pi, hard=True)
+    sample_shape = mu.shape[:-1]
+    mu = (mu * idx).sum(dim=-1)
+    sigma = (sigma * idx).sum(dim=-1)
+    eps = torch.randn_like(mu).cuda()
+    sample = mu + sigma * eps
+    return sample
 
 
 class MixtureLinear(ModuleWrapper):
@@ -36,8 +62,6 @@ class MixtureLinear(ModuleWrapper):
         self.out_features = out_features
         self.use_bias = bias
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.gmm = None
-        self.gmm_bias = None
 
         self.W_pi = Parameter(torch.empty((out_features, in_features, num_tasks), device=self.device))
         self.W_mu = Parameter(torch.empty((out_features, in_features, num_tasks), device=self.device))
@@ -68,22 +92,14 @@ class MixtureLinear(ModuleWrapper):
                 self.bias_mu.data[:, i] = bias_mu_individual[i].data
                 self.bias_rho.data[:, i] = bias_rho_individual[i].data
 
-        cfg.distribution_updated = True
-
     def forward(self, input):
-        if self.gmm is None or cfg.distribution_updated:
-            W_sigma = torch.log1p(torch.exp(self.W_rho))
-            self.gmm = GaussianMixtureModel(self.W_pi, self.W_mu, W_sigma)
-
-            if self.use_bias:
-                bias_sigma = torch.log1p(torch.exp(self.bias_rho))
-                self.gmm_bias = GaussianMixtureModel(self.bias_pi, self.bias_mu, bias_sigma)
-
-            cfg.distribution_updated = False
-
-        weight = self.gmm.sample()
+        W_sigma = torch.log1p(torch.exp(self.W_rho))
         if self.use_bias:
-            bias = self.gmm_bias.sample()
+            bias_sigma = torch.log1p(torch.exp(self.bias_rho))
+
+        weight = sample_gmm(self.W_pi, self.W_mu, W_sigma)
+        if self.use_bias:
+            bias = sample_gmm(self.bias_pi, self.bias_mu, bias_sigma)
         else:
             bias = None
 
@@ -109,8 +125,6 @@ class MixtureConv2d(ModuleWrapper):
         self.groups = 1
         self.use_bias = bias
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
-        self.gmm = None
-        self.gmm_bias = None
 
         self.W_pi = Parameter(torch.empty((out_channels, in_channels, *self.kernel_size, num_tasks), device=self.device))
         self.W_mu = Parameter(torch.empty((out_channels, in_channels, *self.kernel_size, num_tasks), device=self.device))
@@ -141,22 +155,14 @@ class MixtureConv2d(ModuleWrapper):
                 self.bias_mu.data[:, i] = bias_mu_individual[i].data
                 self.bias_rho.data[:, i] = bias_rho_individual[i].data
 
-        cfg.distribution_updated = True
-
     def forward(self, input):
-        if self.gmm is None or cfg.distribution_updated:
-            W_sigma = torch.log1p(torch.exp(self.W_rho))
-            self.gmm = GaussianMixtureModel(self.W_pi, self.W_mu, W_sigma)
-
-            if self.use_bias:
-                bias_sigma = torch.log1p(torch.exp(self.bias_rho))
-                self.gmm_bias = GaussianMixtureModel(self.bias_pi, self.bias_mu, bias_sigma)
-
-            cfg.distribution_updated = False
-
-        weight = self.gmm.sample()
+        W_sigma = torch.log1p(torch.exp(self.W_rho))
         if self.use_bias:
-            bias = self.gmm_bias.sample()
+            bias_sigma = torch.log1p(torch.exp(self.bias_rho))
+
+        weight = sample_gmm(self.W_pi, self.W_mu, W_sigma)
+        if self.use_bias:
+            bias = sample_gmm(self.bias_pi, self.bias_mu, bias_sigma)
         else:
             bias = None
 
