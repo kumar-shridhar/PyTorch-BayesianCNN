@@ -82,7 +82,7 @@ def plot_gmm_initial_final(model_init, model_final, layer, node, interval=None, 
     x = np.linspace(*interval, num=1000)
     pdf_init = densite_theorique(pi.cpu(), mu.cpu(), sigma.cpu(), x)
     pdf_init = pdf_init / pdf_init.sum()
-    plt.plot(x, pdf_init, c='b', label='initial')
+    plt.plot(x, pdf_init, c='b', label='Before Mixture Training')
 
 
     pi = getattr(model_final, layer).W_pi.data[node]
@@ -102,7 +102,12 @@ def plot_gmm_initial_final(model_init, model_final, layer, node, interval=None, 
     x = np.linspace(*interval, num=1000)
     pdf_final = densite_theorique(pi.cpu(), mu.cpu(), sigma.cpu(), x)
     pdf_final = pdf_final / pdf_final.sum()
-    plt.plot(x, pdf_final, c='r', label='final')
+    plt.plot(x, pdf_final, c='r', label='After Mixture Training')
+    
+    plt.legend(loc="upper left")
+    plt.title(f"Distribution for weight ({node[0]}, {node[1]}) in {layer}")
+    plt.xlabel("Value")
+    plt.ylabel("Probability Density")
 
     plt.show()
 
@@ -149,6 +154,11 @@ def plot_gaussian_initial_final(model_init, model_final, node, interval=None, bi
     pdf_final = pdf_final / pdf_final.sum()
     plt.plot(x, pdf_final, c='r', label='final')
 
+    plt.legend(loc="upper left")
+    plt.title(f"Distribution for weight ({node[0]}, {node[1]}) in fc3 (last layer)")
+    plt.xlabel("Value")
+    plt.ylabel("Probability Density")
+
     plt.show()
 
 
@@ -161,7 +171,7 @@ def get_individual_weights(num_tasks, weights_dir):
 
 
 if __name__ == '__main__':
-    num_tasks = 2
+    num_tasks = 5
     weights_dir = "checkpoints/MNIST/bayesian/splitted/{}-tasks/".format(num_tasks)
     ckpt_name = weights_dir + f"mixture_model_{num_tasks}.pt"
     lr_start = 0.001
@@ -182,6 +192,11 @@ if __name__ == '__main__':
     criterion = nn.CrossEntropyLoss(reduction='mean').to(device)
     optimizer = optim.Adam(net.parameters(), lr=lr_start)
     lr_sched = optim.lr_scheduler.ReduceLROnPlateau(optimizer, patience=7, verbose=True)
+
+    tl = []
+    vl = []
+    ta = []
+    va = []
 
     valid_loss_max = np.Inf
     for epoch in range(n_epochs):
@@ -231,6 +246,11 @@ if __name__ == '__main__':
         print('Epoch: {} \tTraining Loss: {:.4f} \tTraining Accuracy: {:.4f} \tValidation Loss: {:.4f} \tValidation Accuracy: {:.4f}'.format(
             epoch, train_loss, train_acc, valid_loss, valid_acc))
 
+        tl.append(train_loss)
+        vl.append(valid_loss)
+        ta.append(train_acc.item())
+        va.append(valid_acc.item())
+
         lr_sched.step(valid_loss)
 
         # save model if validation accuracy has increased
@@ -240,17 +260,36 @@ if __name__ == '__main__':
             torch.save(net.state_dict(), ckpt_name)
             valid_loss_max = valid_loss
 
-    layer = 'fc2'
-    print("Distributions of layer", layer)
-    for i in range(10):
-        node = [np.random.randint(0, 84), np.random.randint(0, 120)]
-        print("Node:", node)
-        plot_gmm_initial_final(net_init, net, layer, node)
-        print()
+    # layer = 'fc2'
+    # print("Distributions of layer", layer)
+    # for i in range(10):
+    #     node = [np.random.randint(0, 84), np.random.randint(0, 120)]
+    #     print("Node:", node)
+    #     plot_gmm_initial_final(net_init, net, layer, node)
+    #     print()
 
-    print("Distributions for layer fc3")
-    for i in range(10):
-        node = [np.random.randint(0, 10), np.random.randint(0, 84)]
-        print("Node:", node)
-        plot_gaussian_initial_final(net_init, net, node)
-        print()
+    # print("Distributions for layer fc3")
+    # for i in range(10):
+    #     node = [np.random.randint(0, 10), np.random.randint(0, 84)]
+    #     print("Node:", node)
+    #     plot_gaussian_initial_final(net_init, net, node)
+    #     print()
+
+    plt.plot(range(1, n_epochs + 1), tl, c='r', label='Training Loss')
+    plt.plot(range(1, n_epochs + 1), vl, c='b', label='Validation Loss')
+    plt.legend(loc="upper left")
+    plt.title(f"Mixture Model Loss {num_tasks} tasks\n lr = {lr_start}    num_ensemble = 10")
+    plt.xlabel("Epochs")
+    plt.ylabel("Loss")
+    plt.show()
+
+    ta = np.array(ta) * 100
+    va = np.array(va) * 100
+
+    plt.plot(range(1, n_epochs + 1), ta, c='r', label='Training Accuracy')
+    plt.plot(range(1, n_epochs + 1), va, c='b', label='Validation Accuracy')
+    plt.legend(loc="upper left")
+    plt.title(f"Mixture Model Accuracy(%) {num_tasks} tasks\n lr = {lr_start}    num_ensemble = 10")
+    plt.xlabel("Epochs")
+    plt.ylabel("Accuracy(%)")
+    plt.show()
