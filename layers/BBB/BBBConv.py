@@ -18,7 +18,7 @@ class BBBConv2d(ModuleWrapper):
         super(BBBConv2d, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
-        self.kernel_size = (kernel_size, kernel_size)
+        self.kernel_size = kernel_size if isinstance(kernel_size, tuple) else (kernel_size, kernel_size)
         self.stride = stride
         self.padding = padding
         self.dilation = dilation
