@@ -3,3 +3,5 @@ data/
 checkpoint_/
 *.pyc
 
+*.png
+*.jpeg
