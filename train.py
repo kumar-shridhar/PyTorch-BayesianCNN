@@ -3,7 +3,7 @@ import matplotlib
 import matplotlib.pyplot as plt
 import time
 import h5py
-import srcnn
+import src.srcnn as srcnn
 import torch.optim as optim
 import torch.nn as nn
 import numpy as np
@@ -27,7 +27,7 @@ img_rows, img_cols = 33, 33
 out_rows, out_cols = 33, 33
 
 
-file = h5py.File('../input/train_mscale.h5')
+file = h5py.File('./input/train_mscale.h5')
 # `in_train` has shape (21884, 33, 33, 1) which corresponds to
 # 21884 image patches of 33 pixels height & width and 1 color channel
 in_train = file['data'][:] # the training data
@@ -66,7 +66,13 @@ val_loader = DataLoader(val_data, batch_size=batch_size)
 
 # initialize the model
 print('Computation device: ', device)
-model = srcnn.SRCNN().to(device)
+priors={
+    'prior_mu': 0,
+    'prior_sigma': 0.1,
+    'posterior_mu_initial': (0, 0.1),  # (mean, std) normal_
+    'posterior_rho_initial': (-5, 0.1),  # (mean, std) normal_
+}
+model = srcnn.BayesianNet(1, priors).to(device)
 print(model)
 
 # optimizer
@@ -103,6 +109,7 @@ def train(model, dataloader):
         # zero grad the optimizer
         optimizer.zero_grad()
         outputs = model(image_data)
+        print(outputs.shape)
         loss = criterion(outputs, label)
         # backpropagation
         loss.backward()
@@ -134,7 +141,7 @@ def validate(model, dataloader, epoch):
             batch_psnr = psnr(label, outputs)
             running_psnr += batch_psnr
         outputs = outputs.cpu()
-        save_image(outputs, f"../outputs/val_sr{epoch}.png")
+        save_image(outputs, f"./outputs/val_sr{epoch}.png")
     final_loss = running_loss/len(dataloader.dataset)
     final_psnr = running_psnr/int(len(val_data)/dataloader.batch_size)
     return final_loss, final_psnr
@@ -162,7 +169,7 @@ plt.plot(val_loss, color='red', label='validataion loss')
 plt.xlabel('Epochs')
 plt.ylabel('Loss')
 plt.legend()
-plt.savefig('../outputs/loss.png')
+plt.savefig('./outputs/loss.png')
 plt.show()
 # psnr plots
 plt.figure(figsize=(10, 7))
@@ -171,8 +178,8 @@ plt.plot(val_psnr, color='blue', label='validataion PSNR dB')
 plt.xlabel('Epochs')
 plt.ylabel('PSNR (dB)')
 plt.legend()
-plt.savefig('../outputs/psnr.png')
+plt.savefig('./outputs/psnr.png')
 plt.show()
 # save the model to disk
 print('Saving model...')
-torch.save(model.state_dict(), '../outputs/model.pth')
+torch.save(model.state_dict(), './outputs/model.pth')

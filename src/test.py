@@ -8,7 +8,7 @@ from torchvision.utils import save_image
 
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
-model = srcnn.SRCNN().to(device)
+model = srcnn.Net(1).to(device)
 model.load_state_dict(torch.load('../outputs/model.pth'))
 
 
