@@ -17,8 +17,8 @@ from torchvision.utils import save_image
 matplotlib.style.use('ggplot')
 
 # learning parameters
-batch_size = 64 # batch size, reduce if facing OOM error
-epochs = 20 # number of epochs to train the SRCNN model for
+batch_size = 256 # batch size, reduce if facing OOM error
+epochs = 100 # number of epochs to train the SRCNN model for
 lr = 0.001 # the learning rate
 device = 'cuda' if torch.cuda.is_available() else 'cpu'
 
@@ -73,6 +73,7 @@ priors={
     'posterior_rho_initial': (-5, 0.1),  # (mean, std) normal_
 }
 model = srcnn.BayesianNet(1, priors).to(device)
+# model = srcnn.Net(1).to(device)
 print(model)
 
 # optimizer
@@ -109,7 +110,9 @@ def train(model, dataloader):
         # zero grad the optimizer
         optimizer.zero_grad()
         outputs = model(image_data)
-        print(outputs.shape)
+        # print(f'Len of outputs: {len(outputs)}')
+        # print(outputs[0].shape)
+        # print(outputs[1].shape)
         loss = criterion(outputs, label)
         # backpropagation
         loss.backward()

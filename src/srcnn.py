@@ -54,16 +54,18 @@ class BayesianNet(ModuleWrapper):
         else:
             raise ValueError("Only softplus or relu supported")
         self.conv1 = BBBConv2d(1, 64, 5, padding=2, bias=True, priors=self.priors)
-        self.act1 = self.act()
-        self.pool1 = nn.MaxPool2d(kernel_size=3, stride=1)
+        # self.act1 = self.act()
+        # self.pool1 = nn.MaxPool2d(kernel_size=3, stride=1)
 
-        self.conv2 = BBBConv2d(64, 32, 2, padding=1, bias=True, priors=self.priors)
-        self.act2 = self.act()
-        self.pool2 = nn.MaxPool2d(kernel_size=3, stride=1)
 
-        self.conv3 = BBBConv2d(32, 1 * (1 ** 2), 2, padding=1, bias=True, priors=self.priors)
-        self.act3 = self.act()
-        self.pool3 = nn.MaxPool2d(kernel_size=3, stride=1)
+        # self.conv2 = BBBConv2d(64, 64, 3, padding=1, bias=True, priors=self.priors)
+        self.conv2 = BBBConv2d(64, 32, 3, padding=1, bias=True, priors=self.priors)
+        # self.act2 = self.act()
+        # self.pool2 = nn.MaxPool2d(kernel_size=3, stride=1)
+
+        self.conv3 = BBBConv2d(32, 1 * (1 ** 2), 3, padding=1, bias=True, priors=self.priors)
+        # self.act3 = self.act()
+        # self.pool3 = nn.MaxPool2d(kernel_size=3, stride=1)
 
         # self.flatten = FlattenLayer(2 * 2 * 128)
         # self.fc1 = BBBLinear(2 * 2 * 128, 1000, bias=True, priors=self.priors)
@@ -77,3 +79,9 @@ class BayesianNet(ModuleWrapper):
 
         self.pixel_shuffle = nn.PixelShuffle(1)
 
+    # TODO: should this one be overwritten? 
+    def forward(self, x):
+        x = F.tanh(self.conv1(x))
+        x = F.tanh(self.conv2(x))
+        x = F.sigmoid(self.pixel_shuffle(self.conv3(x)))
+        return x
