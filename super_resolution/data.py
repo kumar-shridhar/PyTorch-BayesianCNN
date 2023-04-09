@@ -4,10 +4,10 @@ from six.moves import urllib
 import tarfile
 from torchvision.transforms import Compose, CenterCrop, ToTensor, Resize
 
-from dataset import DatasetFromFolder
+from super_resolution.dataset import DatasetFromFolder
 
 
-def download_bsd300(dest="dataset"):
+def download_bsd300(dest="./super_resolution/dataset"):
     output_image_dir = join(dest, "BSDS300/images")
 
     if not exists(output_image_dir):
