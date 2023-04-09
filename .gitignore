@@ -6,4 +6,4 @@ checkpoint_/
 *.png
 *.jpeg
 
-*.pth
+*.h5
