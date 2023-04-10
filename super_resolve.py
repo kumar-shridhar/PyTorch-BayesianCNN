@@ -18,7 +18,7 @@ print(opt)
 img = Image.open(opt.input_image).convert('YCbCr')
 y, cb, cr = img.split()
 
-model = torch.load(f'./models/{opt.model}')
+model = torch.load(f'./super_resolution/models/{opt.model}')
 img_to_tensor = ToTensor()
 input = img_to_tensor(y).view(1, -1, y.size[1], y.size[0])
 
