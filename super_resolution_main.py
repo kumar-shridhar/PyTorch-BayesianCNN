@@ -6,7 +6,7 @@ import torch
 import torch.nn as nn
 import torch.optim as optim
 from torch.utils.data import DataLoader
-from super_resolution.model import Net
+from super_resolution.model import Net, BayesianNet
 from super_resolution.data import get_training_set, get_test_set
 
 # Training settings
@@ -46,7 +46,14 @@ training_data_loader = DataLoader(dataset=train_set, num_workers=opt.threads, ba
 testing_data_loader = DataLoader(dataset=test_set, num_workers=opt.threads, batch_size=opt.testBatchSize, shuffle=False)
 
 print('===> Building model')
-model = Net(upscale_factor=opt.upscale_factor).to(device)
+priors={
+    'prior_mu': 0,
+    'prior_sigma': 0.1,
+    'posterior_mu_initial': (0, 0.1),  # (mean, std) normal_
+    'posterior_rho_initial': (-5, 0.1),  # (mean, std) normal_
+}
+model = BayesianNet(1, opt.upscale_factor, priors).to(device)
+# model = Net(upscale_factor=opt.upscale_factor).to(device)
 criterion = nn.MSELoss()
 
 optimizer = optim.Adam(model.parameters(), lr=opt.lr)
@@ -55,10 +62,15 @@ optimizer = optim.Adam(model.parameters(), lr=opt.lr)
 def train(epoch):
     epoch_loss = 0
     for iteration, batch in enumerate(training_data_loader, 1):
+        torch.cuda.empty_cache()
         input, target = batch[0].to(device), batch[1].to(device)
 
         optimizer.zero_grad()
-        loss = criterion(model(input), target)
+        output = model(input)
+        # Should be: [batchSize, 1, 256, 256]
+        # print(output.shape)
+        # print(target.shape)
+        loss = criterion(output, target)
         epoch_loss += loss.item()
         loss.backward()
         optimizer.step()

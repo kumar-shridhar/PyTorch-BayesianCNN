@@ -36,7 +36,7 @@ class Net(nn.Module):
 
 
 class BayesianNet(ModuleWrapper):
-    def __init__(self, inputs, priors, layer_type='lrt', activation_type='softplus'):
+    def __init__(self, inputs, upscale_factor, priors, layer_type='lrt', activation_type='softplus'):
         super(BayesianNet, self).__init__()
 
         self.layer_type = layer_type
@@ -62,12 +62,12 @@ class BayesianNet(ModuleWrapper):
         # self.pool1 = nn.MaxPool2d(kernel_size=3, stride=1)
 
 
-        # self.conv2 = BBBConv2d(64, 64, 3, padding=1, bias=True, priors=self.priors)
-        self.conv2 = BBBConv2d(64, 32, 3, padding=1, bias=True, priors=self.priors)
+        self.conv2 = BBBConv2d(64, 64, 3, padding=1, bias=True, priors=self.priors)
+        self.conv3 = BBBConv2d(64, 32, 3, padding=1, bias=True, priors=self.priors)
         # self.act2 = self.act()
         # self.pool2 = nn.MaxPool2d(kernel_size=3, stride=1)
 
-        self.conv3 = BBBConv2d(32, 1 * (1 ** 2), 3, padding=1, bias=True, priors=self.priors)
+        self.conv4 = BBBConv2d(32, 1 * (upscale_factor ** 2), 3, padding=1, bias=True, priors=self.priors)
         # self.act3 = self.act()
         # self.pool3 = nn.MaxPool2d(kernel_size=3, stride=1)
 
@@ -81,7 +81,7 @@ class BayesianNet(ModuleWrapper):
         # self.fc3 = BBBLinear(1000, 1, bias=True, priors=self.priors)
 
 
-        self.pixel_shuffle = nn.PixelShuffle(1)
+        self.pixel_shuffle = nn.PixelShuffle(upscale_factor)
 
     # TODO: should this one be overwritten? 
     def forward(self, x):
