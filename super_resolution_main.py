@@ -1,5 +1,6 @@
 from __future__ import print_function
 import argparse
+import csv
 from math import log10
 
 import torch
@@ -26,8 +27,8 @@ print(opt)
 
 if opt.cuda and not torch.cuda.is_available():
     raise Exception("No GPU found, please run without --cuda")
-if not opt.mps and torch.backends.mps.is_available():
-    raise Exception("Found mps device, please run with --mps to enable macOS GPU")
+# if not opt.mps and torch.backends.mps.is_available():
+#     raise Exception("Found mps device, please run with --mps to enable macOS GPU")
 
 torch.manual_seed(opt.seed)
 use_mps = opt.mps and torch.backends.mps.is_available()
@@ -58,6 +59,8 @@ criterion = nn.MSELoss()
 
 optimizer = optim.Adam(model.parameters(), lr=opt.lr)
 
+complete_avg_loss_list = dict()
+complete_avg_psnr_list = dict()
 
 def train(epoch):
     epoch_loss = 0
@@ -76,11 +79,13 @@ def train(epoch):
         optimizer.step()
 
         print("===> Epoch[{}]({}/{}): Loss: {:.4f}".format(epoch, iteration, len(training_data_loader), loss.item()))
+    
+    complete_avg_loss = epoch_loss / len(training_data_loader)
+    complete_avg_loss_list[f'Epoch: {epoch}'] = complete_avg_loss
+    print("===> Epoch {} Complete: Avg. Loss: {:.4f}".format(epoch, complete_avg_loss))
 
-    print("===> Epoch {} Complete: Avg. Loss: {:.4f}".format(epoch, epoch_loss / len(training_data_loader)))
 
-
-def test():
+def test(epoch):
     avg_psnr = 0
     with torch.no_grad():
         for batch in testing_data_loader:
@@ -90,7 +95,10 @@ def test():
             mse = criterion(prediction, target)
             psnr = 10 * log10(1 / mse.item())
             avg_psnr += psnr
-    print("===> Avg. PSNR: {:.4f} dB".format(avg_psnr / len(testing_data_loader)))
+    complete_avg_psnr = avg_psnr / len(testing_data_loader)
+    complete_avg_psnr_list[f'Epoch: {epoch}'] = complete_avg_psnr
+    
+    print("===> Avg. PSNR: {:.4f} dB".format(complete_avg_psnr))
 
 
 def checkpoint(epoch):
@@ -100,5 +108,17 @@ def checkpoint(epoch):
 
 for epoch in range(1, opt.nEpochs + 1):
     train(epoch)
-    test()
+    test(epoch)
     checkpoint(epoch)
+print(complete_avg_loss_list)
+print(complete_avg_psnr_list)
+
+with open('complete_avg_loss.csv', 'w') as csv_file:  
+    writer = csv.writer(csv_file)
+    for key, value in complete_avg_loss_list.items():
+       writer.writerow([key, value])
+       
+with open('complete_avg_psnr.csv', 'w') as csv_file:  
+    writer = csv.writer(csv_file)
+    for key, value in complete_avg_psnr_list.items():
+       writer.writerow([key, value])
