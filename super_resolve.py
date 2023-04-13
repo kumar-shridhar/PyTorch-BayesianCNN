@@ -26,7 +26,7 @@ if opt.cuda:
     model = model.cuda()
     input = input.cuda()
 
-out = model(input)
+out, kl = model(input)
 out = out.cpu()
 out_img_y = out[0].detach().numpy()
 out_img_y *= 255.0
