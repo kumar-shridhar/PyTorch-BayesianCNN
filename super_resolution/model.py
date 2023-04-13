@@ -84,8 +84,8 @@ class BayesianNet(ModuleWrapper):
         self.pixel_shuffle = nn.PixelShuffle(upscale_factor)
 
     # TODO: should this one be overwritten? 
-    def forward(self, x):
-        x = F.tanh(self.conv1(x))
-        x = F.tanh(self.conv2(x))
-        x = F.sigmoid(self.pixel_shuffle(self.conv3(x)))
-        return x
+    # def forward(self, x):
+    #     x = F.tanh(self.conv1(x))
+    #     x = F.tanh(self.conv2(x))
+    #     x = F.sigmoid(self.pixel_shuffle(self.conv3(x)))
+    #     return x

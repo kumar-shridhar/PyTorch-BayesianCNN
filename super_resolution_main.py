@@ -66,7 +66,7 @@ def train(epoch):
         input, target = batch[0].to(device), batch[1].to(device)
 
         optimizer.zero_grad()
-        output = model(input)
+        output, kl = model(input)
         # Should be: [batchSize, 1, 256, 256]
         # print(output.shape)
         # print(target.shape)
@@ -86,7 +86,7 @@ def test():
         for batch in testing_data_loader:
             input, target = batch[0].to(device), batch[1].to(device)
 
-            prediction = model(input)
+            prediction, kl = model(input)
             mse = criterion(prediction, target)
             psnr = 10 * log10(1 / mse.item())
             avg_psnr += psnr
