@@ -11,8 +11,8 @@ def is_image_file(filename):
 
 def load_img(filepath):
     img = Image.open(filepath).convert('YCbCr')
-    y, _, _ = img.split()
-    return y
+    y, cb, cr = img.split()
+    return y, cb, cr 
 
 
 class DatasetFromFolder(data.Dataset):
@@ -23,8 +23,18 @@ class DatasetFromFolder(data.Dataset):
         self.input_transform = input_transform
         self.target_transform = target_transform
 
+    def getitem_full(self, index):
+        input, cb, cr = load_img(self.image_filenames[index])
+        target = input.copy()
+        if self.input_transform:
+            input = self.input_transform(input)
+        if self.target_transform:
+            target = self.target_transform(target)
+
+        return input, target, cb, cr
+
     def __getitem__(self, index):
-        input = load_img(self.image_filenames[index])
+        input, _, _ = load_img(self.image_filenames[index])
         target = input.copy()
         if self.input_transform:
             input = self.input_transform(input)
