@@ -1,5 +1,6 @@
 from os.path import exists, join, basename
-from os import makedirs, remove
+from os import makedirs, remove, listdir
+import shutil
 from zipfile import ZipFile
 from six.moves import urllib
 import tarfile
@@ -31,6 +32,26 @@ def download_bsd300(dest="./super_resolution/dataset"):
 
     return output_image_dir
 
+
+def download_coco_testing(src_folder="./super_resolution/dataset/coco/images/val2017"):
+    dest_folder = "./super_resolution/dataset/coco/images/test"
+    if not exists(dest_folder):
+        makedirs(dest_folder)
+
+    # Get a list of all the files in the source folder
+    files = listdir(src_folder)
+
+    # Filter the list to only include JPEG files
+    jpeg_files = [file for file in files if file.endswith(".jpg")]
+
+    # Take the first 500 JPEG files
+    files_to_move = jpeg_files[:500]
+
+    # Move each file to the destination folder
+    for file in files_to_move:
+        source_file = join(src_folder, file)
+        dest_file = join(dest_folder, file)
+        shutil.move(source_file, dest_file)
 
 def download_coco(dest="./super_resolution/dataset"):
     output_image_dir = join(dest, "coco/images/val2017")
@@ -92,9 +113,11 @@ def get_test_set(upscale_factor, dataset):
     if(dataset == "bsd300"):
         root_dir = download_bsd300()
         test_dir = join(root_dir, "test")
+
     else:
-        root_dir = download_coco()
-        test_dir = root_dir
+        download_coco_testing()
+        test_dir = "./super_resolution/dataset/coco/images/test"
+        
     crop_size = calculate_valid_crop_size(256, upscale_factor)
 
     return DatasetFromFolder(test_dir,
