@@ -30,13 +30,13 @@ class DatasetFromFolder(data.Dataset):
             input = self.input_transform(y)
         if self.target_transform:
             target = self.target_transform(target)
-            cb = self.target_transform(cb)
-            cr = self.target_transform(cr)
+            # cb = self.target_transform(cb)
+            # cr = self.target_transform(cr)
 
-        return input, target, y, cb, cr
+        return input, target, cb, cr
 
     def __getitem__(self, index):
-        input, cb, cr = load_img(self.image_filenames[index])
+        input, _, _ = load_img(self.image_filenames[index])
         target = input.copy()
         if self.input_transform:
             input = self.input_transform(input)
