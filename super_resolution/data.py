@@ -33,7 +33,7 @@ def download_bsd300(dest="./super_resolution/dataset"):
 
 
 def download_coco(dest="./super_resolution/dataset"):
-    output_image_dir = join(dest, "coco/val2017")
+    output_image_dir = join(dest, "coco/images/val2017")
 
     if not exists(output_image_dir):
         makedirs(output_image_dir)
@@ -77,10 +77,10 @@ def target_transform(crop_size):
 def get_training_set(upscale_factor, dataset):
     if(dataset == "bsd300"):
         root_dir = download_bsd300()
-        train_dir = join(root_dir, "trains")
+        train_dir = join(root_dir, "train")
     else:
         root_dir = download_coco()
-        train_dir = join(root_dir, "val2017")
+        train_dir = root_dir
     crop_size = calculate_valid_crop_size(256, upscale_factor)
 
     return DatasetFromFolder(train_dir,
@@ -94,7 +94,7 @@ def get_test_set(upscale_factor, dataset):
         test_dir = join(root_dir, "test")
     else:
         root_dir = download_coco()
-        test_dir = join(root_dir, "val2017")
+        test_dir = root_dir
     crop_size = calculate_valid_crop_size(256, upscale_factor)
 
     return DatasetFromFolder(test_dir,
