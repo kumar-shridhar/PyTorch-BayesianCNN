@@ -1,5 +1,6 @@
 from os.path import exists, join, basename
 from os import makedirs, remove
+from zipfile import ZipFile
 from six.moves import urllib
 import tarfile
 from torchvision.transforms import Compose, CenterCrop, ToTensor, Resize
@@ -31,6 +32,29 @@ def download_bsd300(dest="./super_resolution/dataset"):
     return output_image_dir
 
 
+def download_coco(dest="./super_resolution/dataset"):
+    output_image_dir = join(dest, "coco/val2017")
+
+    if not exists(output_image_dir):
+        makedirs(output_image_dir)
+        url = "http://images.cocodataset.org/zips/val2017.zip"
+        print("downloading url ", url)
+
+        data = urllib.request.urlopen(url)
+
+        file_path = join(dest, "val2017.zip")
+        with open(file_path, 'wb') as f:
+            f.write(data.read())
+
+        print("Extracting data")
+        with ZipFile(file_path, 'r') as zip_ref:
+            zip_ref.extractall(output_image_dir)
+
+        remove(file_path)
+
+    return output_image_dir
+
+
 def calculate_valid_crop_size(crop_size, upscale_factor):
     return crop_size - (crop_size % upscale_factor)
 
@@ -50,9 +74,13 @@ def target_transform(crop_size):
     ])
 
 
-def get_training_set(upscale_factor):
-    root_dir = download_bsd300()
-    train_dir = join(root_dir, "train")
+def get_training_set(upscale_factor, dataset):
+    if(dataset == "bsd300"):
+        root_dir = download_bsd300()
+        train_dir = join(root_dir, "trains")
+    else:
+        root_dir = download_coco()
+        train_dir = join(root_dir, "val2017")
     crop_size = calculate_valid_crop_size(256, upscale_factor)
 
     return DatasetFromFolder(train_dir,
@@ -60,9 +88,13 @@ def get_training_set(upscale_factor):
                              target_transform=target_transform(crop_size))
 
 
-def get_test_set(upscale_factor):
-    root_dir = download_bsd300()
-    test_dir = join(root_dir, "test")
+def get_test_set(upscale_factor, dataset):
+    if(dataset == "bsd300"):
+        root_dir = download_bsd300()
+        test_dir = join(root_dir, "test")
+    else:
+        root_dir = download_coco()
+        test_dir = join(root_dir, "val2017")
     crop_size = calculate_valid_crop_size(256, upscale_factor)
 
     return DatasetFromFolder(test_dir,
