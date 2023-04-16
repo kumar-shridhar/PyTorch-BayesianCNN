@@ -1,0 +1,13 @@
+h5py==3.8.0
+matplotlib==3.7.1
+numpy==1.23.5
+opencv_python==4.7.0.72
+pandas==1.5.3
+Pillow==9.5.0
+pytest==7.3.0
+scikit_learn==1.2.2
+seaborn==0.12.2
+six==1.16.0
+torch==2.0.0+cu117
+torchvision==0.16.0a0+5c5a94d
+tqdm==4.65.0

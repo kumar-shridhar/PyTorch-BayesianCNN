@@ -3,3 +3,8 @@ data/
 checkpoint_/
 *.pyc
 
+*.png
+*.jpeg
+
+*.h5
+*.ipynb_checkpoints

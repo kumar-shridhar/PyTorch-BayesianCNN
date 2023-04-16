@@ -50,6 +50,8 @@ class BBBConv2d(ModuleWrapper):
             self.register_parameter('bias_rho', None)
 
         self.reset_parameters()
+        self.variance_scale = 1
+        
 
     def reset_parameters(self):
         self.W_mu.data.normal_(*self.posterior_mu_initial)
@@ -75,10 +77,11 @@ class BBBConv2d(ModuleWrapper):
         act_std = torch.sqrt(act_var)
 
         if self.training or sample:
-            eps = torch.empty(act_mu.size()).normal_(0, 1).to(self.device)
+            eps = torch.empty(act_mu.size()).normal_(0, 1 * self.variance_scale).to(self.device)
             return act_mu + act_std * eps
         else:
             return act_mu
+        
 
     def kl_loss(self):
         kl = KL_DIV(self.prior_mu, self.prior_sigma, self.W_mu, self.W_sigma)
