@@ -10,11 +10,17 @@ from torch.nn import Parameter
 from metrics import calculate_kl as KL_DIV
 from ..misc import ModuleWrapper
 
+import random
+seed = 42
+random.seed(seed)
+torch.manual_seed(seed)
+torch.cuda.manual_seed_all(seed)
+torch.backends.cudnn.deterministic = True
+torch.backends.cudnn.benchmark = False
 
 class BBBConv2d(ModuleWrapper):
     def __init__(self, in_channels, out_channels, kernel_size,
-                 stride=1, padding=0, dilation=1, bias=True, priors=None):
-
+                 stride=1, padding=0, dilation=1, groups=1, bias=True, priors=None):
         super(BBBConv2d, self).__init__()
         self.in_channels = in_channels
         self.out_channels = out_channels
@@ -22,7 +28,7 @@ class BBBConv2d(ModuleWrapper):
         self.stride = stride
         self.padding = padding
         self.dilation = dilation
-        self.groups = 1
+        self.groups = groups  
         self.use_bias = bias
         self.device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
@@ -38,8 +44,8 @@ class BBBConv2d(ModuleWrapper):
         self.posterior_mu_initial = priors['posterior_mu_initial']
         self.posterior_rho_initial = priors['posterior_rho_initial']
 
-        self.W_mu = Parameter(torch.empty((out_channels, in_channels, *self.kernel_size), device=self.device))
-        self.W_rho = Parameter(torch.empty((out_channels, in_channels, *self.kernel_size), device=self.device))
+        self.W_mu = Parameter(torch.empty((out_channels, in_channels // groups, *self.kernel_size), device=self.device))
+        self.W_rho = Parameter(torch.empty((out_channels, in_channels // groups, *self.kernel_size), device=self.device))
 
         if self.use_bias:
             self.bias_mu = Parameter(torch.empty((out_channels), device=self.device))
@@ -53,7 +59,6 @@ class BBBConv2d(ModuleWrapper):
     def reset_parameters(self):
         self.W_mu.data.normal_(*self.posterior_mu_initial)
         self.W_rho.data.normal_(*self.posterior_rho_initial)
-
         if self.use_bias:
             self.bias_mu.data.normal_(*self.posterior_mu_initial)
             self.bias_rho.data.normal_(*self.posterior_rho_initial)
