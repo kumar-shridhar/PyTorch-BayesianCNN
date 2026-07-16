@@ -19,6 +19,14 @@ from models.BayesianModels.BayesianLeNet import BBBLeNet
 # CUDA settings
 device = torch.device("cuda:0" if torch.cuda.is_available() else "cpu")
 
+# Reproducibility — so accuracy changes you measure come from your edits,
+# not run-to-run noise
+SEED = 0
+torch.manual_seed(SEED)
+np.random.seed(SEED)
+if torch.cuda.is_available():
+    torch.cuda.manual_seed_all(SEED)
+
 
 def getModel(net_type, inputs, outputs, priors, layer_type, activation_type):
     if net_type == 'lenet':
@@ -41,7 +49,8 @@ def train_model(
     num_ens=1,
     beta_type=0.1,
     epoch=None,
-    num_epochs=None
+    num_epochs=None,
+    grad_clip_norm=5.0,
 ):
     net.train()
 
@@ -84,6 +93,12 @@ def train_model(
         loss = criterion(log_outputs, labels, kl, beta)
 
         loss.backward()
+
+        # Gradient clipping — BBB layers sample noise every forward pass,
+        # which makes gradients noisier than a plain CNN; clipping
+        # stabilizes training and helps final accuracy.
+        torch.nn.utils.clip_grad_norm_(net.parameters(), max_norm=grad_clip_norm)
+
         optimizer.step()
 
         accs.append(metrics.acc(log_outputs.data, labels))
@@ -199,15 +214,21 @@ def run(dataset, net_type):
     os.makedirs(ckpt_dir, exist_ok=True)
 
     criterion = metrics.ELBO(len(trainset)).to(device)
-    optimizer = Adam(net.parameters(), lr=lr_start)
 
-    # Fixed for new PyTorch versions
+    # weight_decay added — the KL term already regularizes toward the
+    # prior, so keep this small relative to a plain CNN.
+    optimizer = Adam(net.parameters(), lr=lr_start, weight_decay=1e-5)
+
     lr_sched = lr_scheduler.ReduceLROnPlateau(
         optimizer,
         patience=6
     )
 
-    valid_loss_max = np.inf
+    # Track best VALIDATION ACCURACY, not lowest validation loss.
+    # valid_loss = NLL + beta * KL, and beta changes across epochs
+    # (Blundell schedule), so it isn't a stable, comparable quantity
+    # epoch-to-epoch. Accuracy is what we actually care about.
+    best_valid_acc = 0.0
 
     for epoch in range(n_epochs):
 
@@ -222,11 +243,17 @@ def run(dataset, net_type):
             num_epochs=n_epochs
         )
 
+        # More MC samples at validation time = lower-variance, generally
+        # more accurate estimate of the model's true predictive
+        # performance, at the cost of extra forward passes (no retraining
+        # needed). Bump this if you can afford the compute.
+        eval_ens = max(valid_ens, 10)
+
         valid_loss, valid_acc = validate_model(
             net,
             criterion,
             valid_loader,
-            num_ens=valid_ens,
+            num_ens=eval_ens,
             beta_type=beta_type,
             epoch=epoch,
             num_epochs=n_epochs
@@ -259,17 +286,37 @@ def run(dataset, net_type):
             )
         )
 
-        if valid_loss <= valid_loss_max:
+        if valid_acc >= best_valid_acc:
             print(
-                'Validation loss decreased '
-                '({:.6f} --> {:.6f}). Saving model ...'.format(
-                    valid_loss_max,
-                    valid_loss
+                'Validation accuracy increased '
+                '({:.4f} --> {:.4f}). Saving model ...'.format(
+                    best_valid_acc,
+                    valid_acc
                 )
             )
 
             torch.save(net.state_dict(), ckpt_name)
-            valid_loss_max = valid_loss
+            best_valid_acc = valid_acc
+
+    # Final honest number: reload the best checkpoint and evaluate on the
+    # held-out test set (previously the script never touched test_loader,
+    # so you had no unbiased accuracy figure at all).
+    net.load_state_dict(torch.load(ckpt_name, map_location=device))
+    test_loss, test_acc = validate_model(
+        net,
+        criterion,
+        test_loader,
+        num_ens=max(valid_ens, 20),
+        beta_type=beta_type,
+        epoch=n_epochs,
+        num_epochs=n_epochs
+    )
+    print(
+        'Best Validation Accuracy: {:.4f}'
+        '\tTest Loss: {:.4f} \tTest Accuracy: {:.4f}'.format(
+            best_valid_acc, test_loss, test_acc
+        )
+    )
 
 
 if __name__ == '__main__':
